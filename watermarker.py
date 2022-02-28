@@ -61,11 +61,12 @@ class Watermarker:
     def add_simple_grid(self):
         spacing = self.image.width / 5
         offset_x = random.random() * spacing
+        offset_lower_x = random.random() * spacing
         lines_in_image = math.ceil(self.image.width / spacing)
         lines_before_image = math.ceil(self.image.height / spacing)
         for line_no in range(-lines_before_image, lines_in_image):
             x0 = line_no * spacing + offset_x
-            x1 = x0 + self.image.height
+            x1 = x0 + self.image.height + offset_lower_x
             self.draw.line(((x0, 0), (x1, self.image.height)), BG_RGBA, width=2)
             self.draw.line(((x0, self.image.height), (x1, 0)), BG_RGBA, width=2)
 
