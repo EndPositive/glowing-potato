@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import math
 import os.path
 import random
 import shutil
@@ -7,6 +7,8 @@ import shutil
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from prompt_toolkit.shortcuts import confirm
+from tqdm import tqdm
+
 from logger import logger
 
 INPUT_DIR = "resources/edge"
@@ -56,6 +58,17 @@ class Watermarker:
 
         self.draw.text((x1, y1), WATERMARK_TEXT, fill=FONT_RGB, font=font)
 
+    def add_simple_grid(self):
+        spacing = self.image.width / 5
+        offset_x = random.random() * spacing
+        lines_in_image = math.ceil(self.image.width / spacing)
+        lines_before_image = math.ceil(self.image.height / spacing)
+        for line_no in range(-lines_before_image, lines_in_image):
+            x0 = line_no * spacing + offset_x
+            x1 = x0 + self.image.height
+            self.draw.line(((x0, 0), (x1, self.image.height)), BG_RGBA, width=2)
+            self.draw.line(((x0, self.image.height), (x1, 0)), BG_RGBA, width=2)
+
     def save(self):
         self.image.save(f"out/{self.filename}")
         logger.debug(f"Added watermark to {self.filename}")
@@ -88,6 +101,7 @@ if __name__ == "__main__":
             skipped += jpgs[i]
             continue
         watermarker.add_text()
+        watermarker.add_simple_grid()
         watermarker.save()
 
     logger.info(f"Processed {len(jpgs)} images. Skipped {len(skipped)}.")
