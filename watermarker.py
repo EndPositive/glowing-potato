@@ -34,6 +34,7 @@ WATERMARK_TEXT = "Getty Images"
 
 class Watermarker:
     def __init__(self, filename):
+        self.filename = filename
         if not filename.endswith(".jpg"):
             raise ValueError("File is not a jpg")
         self.image = Image.open(f"{INPUT_DIR}/{filename}")
@@ -56,8 +57,8 @@ class Watermarker:
         self.draw.text((x1, y1), WATERMARK_TEXT, fill=FONT_RGB, font=font)
 
     def save(self):
-        self.image.save(f"out/{filename}")
-        logger.debug(f"Added watermark to {filename}")
+        self.image.save(f"out/{self.filename}")
+        logger.debug(f"Added watermark to {self.filename}")
 
 
 if __name__ == "__main__":
@@ -77,14 +78,14 @@ if __name__ == "__main__":
     font = ImageFont.truetype("resources/calibri.ttf", FONT_SIZE)
 
     skipped = []
-    for filename in jpgs:
+    for i in tqdm(range(len(jpgs))):
         SEED += 1
         random.seed(SEED)
         try:
-            watermarker = Watermarker(filename)
+            watermarker = Watermarker(jpgs[i])
         except ValueError as e:
             logger.error(e)
-            skipped += filename
+            skipped += jpgs[i]
             continue
         watermarker.add_text()
         watermarker.save()
