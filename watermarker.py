@@ -7,8 +7,9 @@ import shutil
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from prompt_toolkit.shortcuts import confirm
+from logger import logger
 
-INPUT_DIR = "resources/pics"
+INPUT_DIR = "resources/edge"
 OUTPUT_DIR = "out"
 
 # Randomness
@@ -30,9 +31,36 @@ FONT_RGB = FONT_RGB if FONT_RGB else tuple(np.random.choice(range(256), size=3))
 FONT_SIZE = 50
 WATERMARK_TEXT = "Getty Images"
 
-if __name__ == "__main__":
-    from logger import logger
 
+class Watermarker:
+    def __init__(self, filename):
+        if not filename.endswith(".jpg"):
+            raise ValueError("File is not a jpg")
+        self.image = Image.open(f"{INPUT_DIR}/{filename}")
+        if self.image.mode not in ["RGB", "RGBA"]:
+            raise ValueError(f"{filename} has incorrect mode {self.image.mode}")
+        self.draw = ImageDraw.Draw(self.image, "RGBA")
+
+    def add_text(self):
+        w, h = font.getsize(WATERMARK_TEXT)
+        padding = 20
+        x = int(random.random() * (self.image.width - (w + padding))) + (w + padding) / 2
+        y = int(random.random() * (self.image.height - (h + padding))) + (h + padding) / 2
+        x1 = x - (w / 2)
+        x2 = x + (w / 2)
+        y1 = y - (h / 2)
+        y2 = y + (h / 2)
+
+        self.draw.rectangle((x1 - padding, y1 - padding, x2 + padding, y2 + padding), BG_RGBA, BG_RGBA, 0)
+
+        self.draw.text((x1, y1), WATERMARK_TEXT, fill=FONT_RGB, font=font)
+
+    def save(self):
+        self.image.save(f"out/{filename}")
+        logger.debug(f"Added watermark to {filename}")
+
+
+if __name__ == "__main__":
     logger.info(f"SEED: {SEED}")
 
     jpgs = os.listdir(INPUT_DIR)
@@ -52,30 +80,13 @@ if __name__ == "__main__":
     for filename in jpgs:
         SEED += 1
         random.seed(SEED)
-        if not filename.endswith(".jpg"):
+        try:
+            watermarker = Watermarker(filename)
+        except ValueError as e:
+            logger.error(e)
             skipped += filename
             continue
-        image = Image.open(f"{INPUT_DIR}/{filename}")
-        if image.mode not in ["RGB", "RGBA"]:
-            logger.warning(f"{filename} has incorrect mode {image.mode}")
-            skipped += filename
-            continue
-        draw = ImageDraw.Draw(image, "RGBA")
-
-        w, h = font.getsize(WATERMARK_TEXT)
-        padding = 20
-        x = int(random.random() * (image.width - (w + padding))) + (w + padding) / 2
-        y = int(random.random() * (image.height - (h + padding))) + (h + padding) / 2
-        x1 = x - (w / 2)
-        x2 = x + (w / 2)
-        y1 = y - (h / 2)
-        y2 = y + (h / 2)
-
-        draw.rectangle((x1 - padding, y1 - padding, x2 + padding, y2 + padding), BG_RGBA, BG_RGBA, 0)
-
-        draw.text((x1, y1), WATERMARK_TEXT, fill=FONT_RGB, font=font)
-
-        image.save(f"out/{filename}")
-        logger.debug(f"Added watermark to {filename}")
+        watermarker.add_text()
+        watermarker.save()
 
     logger.info(f"Processed {len(jpgs)} images. Skipped {len(skipped)}.")
