@@ -35,17 +35,20 @@ WATERMARK_TEXT = "Getty Images"
 
 
 class Watermarker:
-    def __init__(self, filename):
-        self.filename = filename
-        if not filename.endswith(".jpg"):
+    def __init__(self, file_path, font=ImageFont.truetype("resources/calibri.ttf", FONT_SIZE)):
+        if not file_path.endswith(".jpg"):
             raise ValueError("File is not a jpg")
-        self.image = Image.open(f"{INPUT_DIR}/{filename}")
+
+        self.filename = os.path.basename(file_path)
+        self.font = font
+        self.image = Image.open(file_path)
         if self.image.mode not in ["RGB", "RGBA"]:
-            raise ValueError(f"{filename} has incorrect mode {self.image.mode}")
+            raise ValueError(f"{self.filename} has incorrect mode {self.image.mode}")
+
         self.draw = ImageDraw.Draw(self.image, "RGBA")
 
     def add_text(self):
-        w, h = font.getsize(WATERMARK_TEXT)
+        w, h = self.font.getsize(WATERMARK_TEXT)
         padding = 20
         x = int(random.random() * (self.image.width - (w + padding))) + (w + padding) / 2
         y = int(random.random() * (self.image.height - (h + padding))) + (h + padding) / 2
@@ -56,7 +59,7 @@ class Watermarker:
 
         self.draw.rectangle((x1 - padding, y1 - padding, x2 + padding, y2 + padding), BG_RGBA, BG_RGBA, 0)
 
-        self.draw.text((x1, y1), WATERMARK_TEXT, fill=FONT_RGB, font=font)
+        self.draw.text((x1, y1), WATERMARK_TEXT, fill=FONT_RGB, font=self.font)
 
     def add_simple_grid(self):
         spacing = self.image.width / 5
@@ -70,8 +73,8 @@ class Watermarker:
             self.draw.line(((x0, 0), (x1, self.image.height)), BG_RGBA, width=2)
             self.draw.line(((x0, self.image.height), (x1, 0)), BG_RGBA, width=2)
 
-    def save(self):
-        self.image.save(f"out/{self.filename}")
+    def save(self, output_dir):
+        self.image.save(f"{output_dir}/{self.filename}")
         logger.debug(f"Added watermark to {self.filename}")
 
 
@@ -89,20 +92,18 @@ if __name__ == "__main__":
 
     os.makedirs(OUTPUT_DIR)
 
-    font = ImageFont.truetype("resources/calibri.ttf", FONT_SIZE)
-
     skipped = []
     for i in tqdm(range(len(jpgs))):
         SEED += 1
         random.seed(SEED)
         try:
-            watermarker = Watermarker(jpgs[i])
+            watermarker = Watermarker(file_path=f"{INPUT_DIR}/{jpgs[i]}")
         except ValueError as e:
             logger.error(e)
             skipped += jpgs[i]
             continue
         watermarker.add_text()
         watermarker.add_simple_grid()
-        watermarker.save()
+        watermarker.save(output_dir=OUTPUT_DIR)
 
     logger.info(f"Processed {len(jpgs)} images. Skipped {len(skipped)}.")
