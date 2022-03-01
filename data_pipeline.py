@@ -14,8 +14,8 @@ def process_image(file_path):
     watermarker.add_text()
     watermarker.add_simple_grid()
 
-    inputs = split_image(file_path)
-    outputs = split_image(watermarker.image)
+    inputs = split_image(watermarker.image)
+    outputs = split_image(file_path)
 
     # get new file names for each chunk
     file_names = [
