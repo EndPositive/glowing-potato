@@ -37,8 +37,13 @@ def split_image(img, chunk_size=(256, 256)):
     if type(img) == str:
         img = Image.open(img)
 
+    # convert to np array for easy manipulation
     arr_img = np.array(img)
+
+    # pad in order to make image splittable into chunks of same size
     arr_img = pad(arr_img, chunk_size)
+
+    # split image into chunks of chunk_size
     arr_img = [
         arr_img[
             row * chunk_size[0] : (row + 1) * chunk_size[0],
@@ -48,5 +53,6 @@ def split_image(img, chunk_size=(256, 256)):
         for col in range(arr_img.shape[1] // chunk_size[1])
     ]
 
+    # convert each chunk to PIL Image and return
     return list(map(Image.fromarray, arr_img))
 
