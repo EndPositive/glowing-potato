@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from logger import logger
 
-INPUT_DIR = "resources/edge"
+INPUT_DIR = "resources/datasets/open-images-v6/validation/data"
 OUTPUT_DIR = "out"
 
 # Randomness
@@ -134,7 +134,7 @@ class Watermarker:
             length = random.randrange(5,10)
             word = self.generate_gibberish(length)
             angle = random.randrange(0, 360)
-            fill = getRandomColor(20, 60)
+            fill = getRandomColor(100, 150)
             x = random.randrange(0, self.image.width)
             y = random.randrange(0, self.image.height)
             self.rotated_text(angle, (x,y), word, fill)
@@ -175,9 +175,10 @@ def resetDir(dirr):
 if __name__ == "__main__":
     logger.info(f"SEED: {SEED}")
 
-    overwrite = len(sys.argv) > 1 and sys.argv[1] == "--o" # Overwrite flag, overwrites existing files and keeps doesn't touch other files
-    reset = len(sys.argv) > 2 and sys.argv[2] == "--r" # Reset flag, start anew with an empty folder
-
+    for flag in sys.argv[1:]:
+        if flag == "--o": overwrite = True
+        elif flag == "--r": reset = True
+        
     jpgs = os.listdir(INPUT_DIR)
 
     if reset: resetDir(OUTPUT_DIR)
