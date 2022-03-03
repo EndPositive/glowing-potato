@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-import math
-import os.path
+import math, time
+import os, sys
 import random
 import shutil
+from CustomPool import CustomPool
 from string import ascii_letters
+import multiprocessing
+# from multiprocessing.pool import ThreadPool
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from prompt_toolkit.shortcuts import confirm
@@ -33,8 +36,8 @@ FONT_RGB = FONT_RGB if FONT_RGB else tuple(np.random.choice(range(256), size=3))
 FONT_SIZE = 50
 WATERMARK_TEXT = "Getty Images"
 
-def getRandomColor():
-    return tuple(np.random.choice(range(256), size=3)) + (random.choice(range(40, 90)),)
+def getRandomColor(startingOpacity=60, maxOpacity=90):
+    return tuple(np.random.choice(range(256), size=3)) + (random.choice(range(startingOpacity, maxOpacity)),)
 
 def radians(deg):
     return deg * math.pi / 180
@@ -58,13 +61,13 @@ class Watermarker:
     def rotated_text(self, angle, xy, text, fill, upscale=False, center_coords=False, *args, **kwargs):
         # Upscale increases text quality when rotated at none 90 degree angle
         max_dim = max(*self.image.size)
-        mask = Image.new('L', (max_dim*2, max_dim*2), 0)
+        mask = Image.new('RGBA', (max_dim*2, max_dim*2), 0)
         draw = ImageDraw.Draw(mask)
         if center_coords: 
             half_text_height = int(draw.textsize(text, self.font)[1] / 2)
             xy = (xy[0], xy[1] - (half_text_height + math.cos(radians(angle)) * half_text_height))
 
-        draw.text((max_dim, max_dim), text, 255, font=self.font,  *args, **kwargs)
+        draw.text((max_dim, max_dim), text, fill, font=self.font,  *args, **kwargs)
         rotated_mask = mask.rotate(angle, resample=(3 if upscale else 0))   
 
         mask_xy = (max_dim - xy[0], max_dim - xy[1])
@@ -126,16 +129,15 @@ class Watermarker:
         return "".join([random.choice(ascii_letters + " ") for x in range(length)])
 
     def add_random_text(self):
-        random_words = random.randrange(2,6)
+        random_words = random.randrange(4,8)
         for _ in range(random_words):
             length = random.randrange(5,10)
             word = self.generate_gibberish(length)
             angle = random.randrange(0, 360)
-            fill = getRandomColor()
+            fill = getRandomColor(20, 60)
             x = random.randrange(0, self.image.width)
             y = random.randrange(0, self.image.height)
             self.rotated_text(angle, (x,y), word, fill)
-
 
     def add_simple_grid(self):
         spacing = self.image.width / 5
@@ -148,40 +150,50 @@ class Watermarker:
             x1 = x0 + self.image.height + offset_lower_x
             self.draw.line(((x0, 0), (x1, self.image.height)), BG_RGBA, width=2)
             self.draw.line(((x0, self.image.height), (x1, 0)), BG_RGBA, width=2)
-            # self.rotated_text(45, (int((x1 - x0) / 2) + x0, int(self.image.height / 2)), "TEST", fill=FONT_RGB, font=self.font, upscale=False, center_coords=True)
 
     def save(self, output_dir=OUTPUT_DIR):
         self.image.save(f"{output_dir}/{self.filename}")
         logger.debug(f"Added watermark to {self.filename}")
 
+def add_watermarks(filepath, i):
+    seed = int(time.time() / i * 10000)
+    random.seed(seed)
+    try: image = Watermarker(filepath)
+    except: return
+    image.draw_randomized_grid()
+    image.draw_random_lines()
+    image.add_random_text()
+    image.save()
+
+def resetDir(dirr):
+    if os.path.exists(dir):
+        answer = confirm(f"Delete output directory {dirr}")
+        if answer: shutil.rmtree(dirr)
+        else: exit(1)
+    os.makedirs(dirr)
 
 if __name__ == "__main__":
     logger.info(f"SEED: {SEED}")
 
+    overwrite = len(sys.argv) > 1 and sys.argv[1] == "--o" # Overwrite flag, overwrites existing files and keeps doesn't touch other files
+    reset = len(sys.argv) > 2 and sys.argv[2] == "--r" # Reset flag, start anew with an empty folder
+
     jpgs = os.listdir(INPUT_DIR)
 
-    if os.path.exists(OUTPUT_DIR):
-        answer = confirm(f"Delete output directory {OUTPUT_DIR}")
-        if answer:
-            shutil.rmtree(OUTPUT_DIR)
-        else:
-            exit(1)
+    if reset: resetDir(OUTPUT_DIR)
+    else: existing_jpgs = os.listdir(OUTPUT_DIR)
 
-    os.makedirs(OUTPUT_DIR)
-    skipped = []
+    p = CustomPool(100)
+    start = time.perf_counter()
+
     for i in tqdm(range(len(jpgs))):
-        SEED += 1
-        random.seed(SEED)
-        try:
-            watermarker = Watermarker(file_path=f"{INPUT_DIR}/{jpgs[i]}")
-        except ValueError as e:
-            logger.error(e)
-            skipped += jpgs[i]
-            continue
-        watermarker.add_text()
-        watermarker.draw_randomized_grid()
-        watermarker.draw_random_lines()
-        watermarker.add_random_text()
-        watermarker.save()
+        if not overwrite and jpgs[i] in existing_jpgs: existing_jpgs.remove(jpgs[i])
+        else: p.map(add_watermarks, (f'{INPUT_DIR}/{jpgs[i]}', i+1,))
 
-    logger.info(f"Processed {len(jpgs)} images. Skipped {len(skipped)}.")
+    print(f'Finished mapping processes')
+
+    while p.is_running(): 
+        time.sleep(0.1)
+        continue
+
+    print(f'Processed {len(jpgs)} images in {round(time.perf_counter() - start, 2)} seconds')
