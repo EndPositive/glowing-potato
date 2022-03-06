@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image
 
 
-def pad(img, align_to):
+def pad(img, align_to, return_padding=False):
     """
     Pads the image to align first two axes to the given dimensions
 
@@ -24,7 +24,19 @@ def pad(img, align_to):
     padding_bottom = (align_to[0] - h % align_to[0] + 1) // 2
     padding_left = (align_to[1] - w % align_to[1]) // 2
     padding_right = (align_to[1] - w % align_to[1] + 1) // 2
-    return np.pad(img, ((padding_top, padding_bottom), (padding_left, padding_right), (0, 0)), 'constant')
+    padded =  np.pad(img, ((padding_top, padding_bottom), (padding_left, padding_right), (0, 0)), 'constant')
+
+    if return_padding:
+        return padded, (padding_top, padding_bottom, padding_left, padding_right)
+    return padded
+
+
+def unpad(img, padding_size):
+    return img[
+        padding_size[0]: -padding_size[1],
+        padding_size[2]: -padding_size[3],
+        :
+    ]
 
 
 def split_image(img, chunk_size=(256, 256)):
@@ -90,3 +102,10 @@ def unsplit_image(chunks, image_size):
 
     return np.vstack(rows)
 
+if __name__ == '__main__':
+
+    img = Image.open('resources/edge/0a1aee5d7701ce5c.jpg')
+    padded, padding = pad(img, (128, 128), True)
+    split = split_image(padded, (128, 128))
+    unsplit = unsplit_image(split, padded.shape[0])
+    unpadded = unpad(unsplit, padding)
