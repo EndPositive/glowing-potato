@@ -9,13 +9,11 @@ from pathlib import Path
 import numpy as np
 from prompt_toolkit.shortcuts import confirm
 
-from preprocessing import DATASET_DIR
+from preprocessing import DATASET_DIR, OUTPUT_DIR
 from preprocessing.data_pipeline import process_default_pool
 
 
 logger = logging.getLogger(__name__)
-
-OUTPUT_DIR = Path(__file__).parent.joinpath("out")
 
 SEED = None
 SEED = SEED if SEED else int(random.random() * 10000)
@@ -75,7 +73,9 @@ if __name__ == "__main__":
 
     input_jpgs = list(DATASET_DIR.glob("*.jpg"))
 
-    if options.reset:
+    if not OUTPUT_DIR.exists():
+        OUTPUT_DIR.mkdir(exist_ok=True)
+    elif options.reset:
         reset_directory(OUTPUT_DIR)
 
     start = time.perf_counter()
