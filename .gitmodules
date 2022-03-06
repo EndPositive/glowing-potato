@@ -1,0 +1,3 @@
+[submodule "swinir"]
+	path = swinir
+	url = https://github.com/JingyunLiang/SwinIR.git

@@ -2,6 +2,7 @@ from hashlib import algorithms_available
 import numpy as np
 from PIL import Image
 
+from preprocessing import EDGE_DIR
 
 def pad(img, align_to, return_padding=False):
     """
@@ -47,7 +48,7 @@ def split_image(img, chunk_size=(256, 256)):
     Returns
         chunks: array of PIL image
     """
-    if type(img) == str:
+    if isinstance(img, str):
         img = Image.open(img)
         img = pad(img, chunk_size)
 
@@ -64,7 +65,7 @@ def split_image(img, chunk_size=(256, 256)):
     img = np.array([
         img[
             row * chunk_size[0] : (row + 1) * chunk_size[0],
-            col * chunk_size[1] : (col + 1) * chunk_size[1]
+            col * chunk_size[1] : (col + 1) * chunk_size[1],
         ]
         for row in range(img.shape[0] // chunk_size[0])
         for col in range(img.shape[1] // chunk_size[1])
@@ -95,4 +96,3 @@ def unsplit_image(chunks, image_size):
     chunks = [np.hstack(x) for x in chunks]
     chunks = np.vstack(chunks)
     return chunks
-
