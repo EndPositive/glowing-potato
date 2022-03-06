@@ -4,9 +4,10 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import List, Tuple
 
+from PIL import Image
 from tqdm import tqdm
 
-from preprocessing import DATASET_DIR, EDGE_DIR
+from preprocessing import EDGE_DIR, OUTPUT_DIR
 from preprocessing.custom_pool import CustomPool
 from preprocessing.formatter import split_image
 from preprocessing.watermarker import Watermarker
@@ -15,20 +16,23 @@ from preprocessing.watermarker import Watermarker
 logger = logging.getLogger(__name__)
 
 
-def process_image(args: Tuple[Path, Path, bool]):
+def process_image(args: Tuple[Path, Path, bool, int]):
     image_path = args[0]
     output_dir = args[1]
     overwrite = args[2]
+    chunk_size = args[3]
 
     try:
         watermarker = Watermarker(image_path)
     except ValueError:
         return
 
+    original_image = watermarker.image.copy()
+
     watermarker.add_default()
 
-    inputs = split_image(watermarker.image)
-    outputs = split_image(image_path.as_posix())
+    inputs = split_image(watermarker.image, (chunk_size, chunk_size))
+    outputs = split_image(original_image, (chunk_size, chunk_size))
 
     # get new file names for each chunk
     file_names = [
@@ -47,7 +51,7 @@ def process_image(args: Tuple[Path, Path, bool]):
 
 
 def process_default_pool(
-    images: List[Path], output_dir: Path, overwrite=True, processes=16
+    images: List[Path], output_dir: Path, chunk_size, overwrite=True, processes=16
 ):
     output_dir.joinpath("input").mkdir(exist_ok=True)
     output_dir.joinpath("output").mkdir(exist_ok=True)
@@ -55,7 +59,8 @@ def process_default_pool(
     with Pool(processes) as pool:
         with tqdm(total=len(images)) as pbar:
             for _ in pool.imap_unordered(
-                process_image, ((image, output_dir, overwrite) for image in images)
+                process_image,
+                ((image, output_dir, overwrite, chunk_size) for image in images),
             ):
                 pbar.update()
         pool.close()
@@ -63,7 +68,7 @@ def process_default_pool(
 
 
 def process_custom_pool(
-    images: List[Path], output_dir: Path, overwrite=True, processes=16
+    images: List[Path], output_dir: Path, chunk_size, overwrite=True, processes=16
 ):
     output_dir.joinpath("input").mkdir(exist_ok=True)
     output_dir.joinpath("output").mkdir(exist_ok=True)
@@ -78,6 +83,7 @@ def process_custom_pool(
                     images[i],
                     output_dir,
                     overwrite,
+                    chunk_size,
                 ),
             ),
         )
@@ -88,4 +94,6 @@ def process_custom_pool(
 
 
 if __name__ == "__main__":
-    process_default_pool(list(EDGE_DIR.glob("*.jpg")), output_dir=DATASET_DIR)
+    process_default_pool(
+        list(EDGE_DIR.glob("*.jpg")), output_dir=OUTPUT_DIR, chunk_size=128
+    )
