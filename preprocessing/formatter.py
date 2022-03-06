@@ -1,4 +1,3 @@
-from hashlib import algorithms_available
 import numpy as np
 from PIL import Image
 

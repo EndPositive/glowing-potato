@@ -66,6 +66,5 @@ def predict_full_image(nn, img):
 if __name__ == '__main__':
     with torch.no_grad():
         Image.fromarray(
-            # predict_full_image(load_swinir(), 'resources/edge/0c3ee986fa326b1a.jpg')
             predict_full_image(load_swinir(), 'resources/dataset/input/0c3ee986fa326b1a_7.jpg')
         ).show()
