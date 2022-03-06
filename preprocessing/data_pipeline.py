@@ -39,11 +39,11 @@ def process_image(args: Tuple[Path, Path, bool]):
     for file_name, input_image, output_image in zip(file_names, inputs, outputs):
         input_path = output_dir.joinpath("input", file_name)
         if not input_path.exists() or overwrite:
-            input_image.save(input_path)
+            Image.fromarray(input_image).save(input_path)
 
         output_path = output_dir.joinpath("output", file_name)
         if not output_path.exists() or overwrite:
-            output_image.save(output_path)
+            Image.fromarray(output_image).save(output_path)
 
 
 def process_default_pool(
