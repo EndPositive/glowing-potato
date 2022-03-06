@@ -1,8 +1,9 @@
+from pathlib import Path
+
 import numpy as np
 import torch
 from PIL import Image
 
-from preprocessing import OUTPUT_DIR
 import preprocessing.formatter as processing
 from swinir.models.network_swinir import SwinIR
 
@@ -46,12 +47,12 @@ class SwinWR:
     def _array_to_input(x):
         if len(x.shape) == 3:
             x = np.expand_dims(x, 0)
-        x = np.transpose(x, (0, 3, 1, 2)) / 255 # convert to channels first
-        return torch.from_numpy(x).float().to('cpu') # add batch dimension
+        x = np.transpose(x, (0, 3, 1, 2)) / 255  # convert to channels first
+        return torch.from_numpy(x).float().to("cpu")  # add batch dimension
 
     def __call__(self, img):
-        if type(img) == str:
-            img = Image.open(img)    
+        if isinstance(img, str) or isinstance(img, Path):
+            img = Image.open(img)
 
         padded, padding = processing.pad(img, (128, 128), return_padding=True)
         split = processing.split_image(padded, (128, 128))
@@ -61,9 +62,7 @@ class SwinWR:
         return unpadded
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     with torch.no_grad():
         model = SwinWR()
-        Image.fromarray(
-            model('resources/dataset/input/0c3ee986fa326b1a_7.jpg')
-        ).show()
+        Image.fromarray(model("resources/out/input/0c3ee986fa326b1a_7.jpg")).show()
