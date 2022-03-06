@@ -872,21 +872,36 @@ def load_swinir(train_only_last=False):
     return model
 
 
-def image_to_input(x):
-    x = np.transpose(x, (2, 0, 1)) # convert to channels first
-    return torch.from_numpy(x).float().unsqueeze(0).to('cpu') # add batch dimension
+def array_to_input(x):
+    if len(x.shape) == 3:
+        x = np.expand_dims(x, 0)
+    x = np.transpose(x, (0, 3, 1, 2)) / 255 # convert to channels first
+    return torch.from_numpy(x).float().to('cpu') # add batch dimension
+
+
+def output_to_array(x):
+    x = x.cpu().detach().numpy()
+    x = np.transpose(x, (0, 2, 3, 1))
+    return (x * 255).astype(np.uint8)
+
+
+def predict_full_image(nn, img):
+    import split_image as processing
+
+    if type(img) == str:
+        img = Image.open(img)    
+
+    padded, padding = processing.pad(img, (128, 128), return_padding=True)
+    split = processing.split_image(padded, (128, 128))
+    output = output_to_array(nn(array_to_input(split)))
+    unsplit = processing.unsplit_image(output, padded.shape[0])
+    unpadded = processing.unpad(unsplit, padding)
+    return unpadded
 
 
 if __name__ == '__main__':
-    nn = load_swinir()
-
-    x = np.asarray(
-        Image.open('resources/dataset/input/0c3ee986fa326b1a_14.jpg')
-    )[:128, :128, :] / 255
-
     with torch.no_grad():
-        tensor_out = nn(image_to_input(x))
-        np_out = tensor_out.cpu().detach().numpy()
-        np_out = (np_out * 255).astype(np.uint8)
-        out = Image.fromarray(np.transpose(np_out[0], (1, 2, 0)))
-        out.show()
+        Image.fromarray(
+            # predict_full_image(load_swinir(), 'resources/edge/0c3ee986fa326b1a.jpg')
+            predict_full_image(load_swinir(), 'resources/dataset/input/0c3ee986fa326b1a_7.jpg')
+        ).show()

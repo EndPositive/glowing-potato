@@ -1,3 +1,4 @@
+from hashlib import algorithms_available
 import numpy as np
 from PIL import Image
 
@@ -17,13 +18,10 @@ def pad(img, align_to, return_padding=False):
         img = np.asarray(img)
 
     h, w, _ = np.shape(img)
-    if h == align_to[0] and w == align_to[1]:
-        return img
-
-    padding_top = (align_to[0] - h % align_to[0]) // 2
-    padding_bottom = (align_to[0] - h % align_to[0] + 1) // 2
-    padding_left = (align_to[1] - w % align_to[1]) // 2
-    padding_right = (align_to[1] - w % align_to[1] + 1) // 2
+    padding_top = 0 if h % align_to[0] == 0 else (align_to[0] - h % align_to[0]) // 2
+    padding_bottom = 0 if h % align_to[0] == 0 else (align_to[0] - h % align_to[0] + 1) // 2
+    padding_left = 0 if w % align_to[1] == 0 else (align_to[1] - w % align_to[1]) // 2
+    padding_right = 0 if w % align_to[1] == 0 else (align_to[1] - w % align_to[1] + 1) // 2
     padded =  np.pad(img, ((padding_top, padding_bottom), (padding_left, padding_right), (0, 0)), 'constant')
 
     if return_padding:
@@ -33,8 +31,8 @@ def pad(img, align_to, return_padding=False):
 
 def unpad(img, padding_size):
     return img[
-        padding_size[0]: -padding_size[1],
-        padding_size[2]: -padding_size[3],
+        padding_size[0]: -padding_size[1] if padding_size[1] != 0 else None,
+        padding_size[2]: -padding_size[3] if padding_size[3] != 0 else None,
         :
     ]
 
@@ -63,17 +61,17 @@ def split_image(img, chunk_size=(256, 256)):
         raise ValueError('Image cannot be split in equal sized chunks. You should pad before.')
 
     # split image into chunks of chunk_size
-    img = [
+    img = np.array([
         img[
             row * chunk_size[0] : (row + 1) * chunk_size[0],
             col * chunk_size[1] : (col + 1) * chunk_size[1]
         ]
         for row in range(img.shape[0] // chunk_size[0])
         for col in range(img.shape[1] // chunk_size[1])
-    ]
+    ])
 
     # convert each chunk to PIL Image and return
-    return list(map(Image.fromarray, img))
+    return img
 
 
 def unsplit_image(chunks, image_size):
@@ -93,12 +91,8 @@ def unsplit_image(chunks, image_size):
     chunk_height = chunks[0].shape[0]
 
     n_rows = image_height // chunk_height
-    n_cols = len(chunks) // n_rows
-
-    rows = []
-    for row in range(n_rows):
-        # piece the image together column by column
-        rows.append(np.hstack(chunks[row * n_cols: (row + 1) * n_cols]))
-
-    return np.vstack(rows)
+    chunks = np.split(chunks, n_rows)
+    chunks = [np.hstack(x) for x in chunks]
+    chunks = np.vstack(chunks)
+    return chunks
 
