@@ -102,10 +102,3 @@ def unsplit_image(chunks, image_size):
 
     return np.vstack(rows)
 
-if __name__ == '__main__':
-
-    img = Image.open('resources/edge/0a1aee5d7701ce5c.jpg')
-    padded, padding = pad(img, (128, 128), True)
-    split = split_image(padded, (128, 128))
-    unsplit = unsplit_image(split, padded.shape[0])
-    unpadded = unpad(unsplit, padding)
