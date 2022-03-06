@@ -1,8 +1,10 @@
 import numpy as np
 from PIL import Image
 
+from preprocessing import EDGE_DIR
 
-def pad(img, align_to):
+
+def pad_image(img, align_to):
     """
     Pads the image to align first two axes to the given dimensions
 
@@ -13,15 +15,19 @@ def pad(img, align_to):
         padded: the padded image
     """
 
-    h, w, _ = np.shape(img)
-    if h == align_to[0] and w == align_to[1]:
+    height, width, _ = np.shape(img)
+    if height == align_to[0] and width == align_to[1]:
         return img
 
-    padding_top = (align_to[0] - h % align_to[0]) // 2
-    padding_bottom = (align_to[0] - h % align_to[0] + 1) // 2
-    padding_left = (align_to[1] - w % align_to[1]) // 2
-    padding_right = (align_to[1] - w % align_to[1] + 1) // 2
-    return np.pad(img, ((padding_top, padding_bottom), (padding_left, padding_right), (0, 0)), 'constant')
+    padding_top = (align_to[0] - height % align_to[0]) // 2
+    padding_bottom = (align_to[0] - height % align_to[0] + 1) // 2
+    padding_left = (align_to[1] - width % align_to[1]) // 2
+    padding_right = (align_to[1] - width % align_to[1] + 1) // 2
+    return np.pad(
+        img,
+        ((padding_top, padding_bottom), (padding_left, padding_right), (0, 0)),
+        "constant",
+    )
 
 
 def split_image(img, chunk_size=(256, 256)):
@@ -34,20 +40,20 @@ def split_image(img, chunk_size=(256, 256)):
     Returns
         chunks: array of PIL image
     """
-    if type(img) == str:
+    if isinstance(img, str):
         img = Image.open(img)
 
     # convert to np array for easy manipulation
     arr_img = np.array(img)
 
     # pad in order to make image splittable into chunks of same size
-    arr_img = pad(arr_img, chunk_size)
+    arr_img = pad_image(arr_img, chunk_size)
 
     # split image into chunks of chunk_size
     arr_img = [
         arr_img[
             row * chunk_size[0] : (row + 1) * chunk_size[0],
-            col * chunk_size[1] : (col + 1) * chunk_size[1]
+            col * chunk_size[1] : (col + 1) * chunk_size[1],
         ]
         for row in range(arr_img.shape[0] // chunk_size[0])
         for col in range(arr_img.shape[1] // chunk_size[1])
@@ -56,3 +62,7 @@ def split_image(img, chunk_size=(256, 256)):
     # convert each chunk to PIL Image and return
     return list(map(Image.fromarray, arr_img))
 
+
+if __name__ == "__main__":
+    splitted_images = split_image(EDGE_DIR.joinpath("0a1aee5d7701ce5c.jpg").as_posix())
+    splitted_images[0].show()
