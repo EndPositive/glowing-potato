@@ -862,19 +862,19 @@ def load_swinir(train_only_last=False):
         )['params']
     )
 
-    for _, param in model.named_parameters():
-        param.requires_grad = False
+    if train_only_last:
+        for _, param in model.named_parameters():
+            param.requires_grad = False
 
-    model.conv_last.weight.requires_grad = True
-    model.conv_last.bias.requires_grad = True
+        model.conv_last.weight.requires_grad = True
+        model.conv_last.bias.requires_grad = True
 
     return model
 
 
 def image_to_input(x):
-    # x = np.transpose(x if x.shape[2] == 1 else x[:, :, [2, 1, 0]], (2, 0, 1))  # HCW-BGR to CHW-RGB
-    x = np.transpose(x, (2, 0, 1))
-    return torch.from_numpy(x).float().unsqueeze(0).to('cpu')  # CHW-RGB to NCHW-RGB
+    x = np.transpose(x, (2, 0, 1)) # convert to channels first
+    return torch.from_numpy(x).float().unsqueeze(0).to('cpu') # add batch dimension
 
 
 if __name__ == '__main__':
@@ -888,7 +888,5 @@ if __name__ == '__main__':
         tensor_out = nn(image_to_input(x))
         np_out = tensor_out.cpu().detach().numpy()
         np_out = (np_out * 255).astype(np.uint8)
-
-        for img in np_out:
-            out = Image.fromarray(np.moveaxis(img, 0, -1))
-            out.show()
+        out = Image.fromarray(np.transpose(np_out[0], (1, 2, 0)))
+        out.show()
