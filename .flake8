@@ -1,0 +1,8 @@
+[flake8]
+exclude =
+    resources,
+    venv,
+    .idea,
+
+max-line-length = 88
+extend-ignore = E203
