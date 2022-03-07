@@ -7,8 +7,7 @@ from string import ascii_letters
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from preprocessing import EDGE_DIR
-
+from preprocessing import EDGE_DIR, RESOURCES_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +43,9 @@ class Watermarker:
     def __init__(
         self,
         image_path: Path,
-        font=ImageFont.truetype("resources/calibri.ttf", FONT_SIZE),
+        font=ImageFont.truetype(
+            RESOURCES_DIR.joinpath("calibri.ttf").as_posix(), FONT_SIZE
+        ),
     ):
         if not image_path.suffix == ".jpg":
             raise ValueError("File is not a jpg")
