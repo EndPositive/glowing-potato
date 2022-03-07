@@ -1,7 +1,6 @@
 import threading
 import time
 
-
 # Performs 3x as good as multiprocessing.pool.ThreadPool and multiprocessing.Pool
 # Bypasses GIL for the most part, limited by memory due to loading images.
 class CustomPool:

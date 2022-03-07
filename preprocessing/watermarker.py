@@ -197,7 +197,7 @@ class Watermarker:
             length = random.randrange(5, 10)
             word = self.generate_gibberish(length)
             angle = random.randrange(0, 360)
-            fill = getRandomColor(100, 150)
+            fill = getRandomColor()
             x = random.randrange(0, self.image.width)
             y = random.randrange(0, self.image.height)
             self.rotated_text(angle, (x, y), word, fill)
@@ -214,9 +214,42 @@ class Watermarker:
             self.draw.line(((x0, 0), (x1, self.image.height)), BG_RGBA, width=2)
             self.draw.line(((x0, self.image.height), (x1, 0)), BG_RGBA, width=2)
 
+    def getRandomCenterCoords(self):
+        x = random.randrange(0, self.image.width)
+        y = random.randrange(0, self.image.height)
+        return (x,y)
+
+    def draw_polygons(self, amount):
+        for _ in range(amount):
+            sides = random.randrange(3,8)
+            coord_set = [self.getRandomCenterCoords()]
+            for _ in range(sides):
+                random_angle = random.randrange(0,90)
+                random_length = random.randrange(16,128)
+                width = random_length * math.cos(random_angle)
+                height = random_length * math.sin(random_angle)
+                curr_x, curr_y = coord_set[-1]
+                coord_set.append((curr_x + width, curr_y + height))
+            self.draw.polygon(coord_set, getRandomColor())
+
+    def draw_circles(self, amount):
+        for _ in range(amount):
+            xy = self.getRandomCenterCoords()
+            width = random.randrange(25,100)
+            height = random.randrange(25,100)
+            xy2 = (xy[0] + width, xy[1] + height)
+            self.draw.ellipse((xy, xy2), getRandomColor())
+
+    def add_shapes(self):
+        amount_polygons = random.randrange(8, 16)
+        self.draw_polygons(amount_polygons)
+        amount_circles = random.randrange(8, 16)
+        self.draw_circles(amount_circles)
+
     def add_default(self):
         self.draw_randomized_grid()
         self.draw_random_lines()
+        self.add_shapes()
         self.add_random_text()
 
     def save(self, output_dir):
@@ -225,6 +258,6 @@ class Watermarker:
 
 
 if __name__ == "__main__":
-    watermarker = Watermarker(EDGE_DIR.joinpath("0a1aee5d7701ce5c.jpg"))
+    watermarker = Watermarker(EDGE_DIR.joinpath("0c3ee986fa326b1a.jpg"))
     watermarker.add_default()
     watermarker.image.show()
