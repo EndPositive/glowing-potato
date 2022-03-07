@@ -9,4 +9,7 @@
         "PYTHONPATH": "${workspaceFolder}",
     },
     "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true,
+    "python.linting.flake8Enabled": true,
 }
