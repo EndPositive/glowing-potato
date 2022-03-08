@@ -217,15 +217,15 @@ class Watermarker:
     def getRandomCenterCoords(self):
         x = random.randrange(0, self.image.width)
         y = random.randrange(0, self.image.height)
-        return (x,y)
+        return (x, y)
 
     def draw_polygons(self, amount):
         for _ in range(amount):
-            sides = random.randrange(3,8)
+            sides = random.randrange(3, 8)
             coord_set = [self.getRandomCenterCoords()]
             for _ in range(sides):
-                random_angle = random.randrange(0,90)
-                random_length = random.randrange(16,128)
+                random_angle = random.randrange(0, 90)
+                random_length = random.randrange(16, 128)
                 width = random_length * math.cos(random_angle)
                 height = random_length * math.sin(random_angle)
                 curr_x, curr_y = coord_set[-1]
@@ -235,8 +235,8 @@ class Watermarker:
     def draw_circles(self, amount):
         for _ in range(amount):
             xy = self.getRandomCenterCoords()
-            width = random.randrange(25,100)
-            height = random.randrange(25,100)
+            width = random.randrange(25, 100)
+            height = random.randrange(25, 100)
             xy2 = (xy[0] + width, xy[1] + height)
             self.draw.ellipse((xy, xy2), getRandomColor())
 
