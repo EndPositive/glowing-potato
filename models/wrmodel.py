@@ -1,3 +1,5 @@
+from asyncio import BaseTransport
+from contextlib import AbstractAsyncContextManager
 import sys; sys.path.append('..')
 
 from pathlib import Path
@@ -7,9 +9,12 @@ from collections.abc import Iterable
 from preprocessing import formatter as processing
 import numpy as np
 
+from train_set import ChunkedWatermarkedSet
+
 
 class WRmodel:
     def __init__(self, image_size=(128, 128)):
+        # constants
         self.image_size = image_size
 
     @abstractclassmethod
@@ -57,3 +62,19 @@ class WRmodel:
 
         # unpad and return
         return processing.unpad(unsplit, padding)
+
+    @abstractclassmethod
+    def save(self, path):
+        pass
+
+    @abstractclassmethod
+    def load(self, path):
+        pass
+
+    @abstractclassmethod
+    def train_epoch(self, trainset: ChunkedWatermarkedSet):
+        pass
+
+    @abstractclassmethod
+    def train(self, n_epochs=0):
+        pass
