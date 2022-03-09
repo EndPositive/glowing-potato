@@ -1,6 +1,8 @@
 from asyncio import BaseTransport
 from contextlib import AbstractAsyncContextManager
-import sys; sys.path.append('..')
+import sys
+
+sys.path.append("..")
 
 from pathlib import Path
 from PIL import Image
@@ -9,7 +11,7 @@ from collections.abc import Iterable
 from preprocessing import formatter as processing
 import numpy as np
 
-from train_set import ChunkedWatermarkedSet
+from data_set import ChunkedWatermarkedSet
 
 
 class WRmodel:
@@ -39,7 +41,7 @@ class WRmodel:
             img = np.asarray(img)
 
         # shape should be image or batch of images
-        assert(len(np.shape(img)) == 3 or len(np.shape(img)) == 4)
+        assert len(np.shape(img)) == 3 or len(np.shape(img)) == 4
 
         # predict multiple images
         if len(np.shape(img)) == 4:

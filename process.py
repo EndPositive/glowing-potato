@@ -46,9 +46,6 @@ if __name__ == "__main__":
         "-r", "--reset", action="store_true", help=f"Recreate directory {OUTPUT_DIR}"
     )
     parser.add_argument(
-        "-s", "--chunk-size", default=128, type=int, help="Image split size"
-    )
-    parser.add_argument(
         "-log",
         "--log",
         default="info",
@@ -83,7 +80,7 @@ if __name__ == "__main__":
 
     start = time.perf_counter()
 
-    process_default_pool(input_jpgs, OUTPUT_DIR, options.chunk_size, options.overwrite)
+    process_default_pool(input_jpgs, OUTPUT_DIR, options.overwrite)
 
     logger.debug(
         "Processed %d images in %d seconds",

@@ -1,6 +1,9 @@
 import sys
 from pathlib import Path
 from turtle import forward
+
+from models.transform import TRANSFORM
+
 sys.path.append(Path(__file__).parents[1].absolute().as_posix())
 import os
 
@@ -8,15 +11,18 @@ import numpy as np
 from PIL import Image
 
 from swinir.models.network_swinir import SwinIR
-from wrmodel import WRmodel
-from train_set import ChunkedWatermarkedSet
+from models.wrmodel import WRmodel
+from models.data_set import ChunkedWatermarkedSet, DataSetType
+from torch.utils.data import DataLoader
 import torch
 from torch import nn
 from torch import optim
 
 
 class SwinWR(WRmodel):
-    def __init__(self, image_size=(128, 128), train_last_layer_only=True, load_path=None):
+    def __init__(
+        self, image_size=(128, 128), train_last_layer_only=True, load_path=None
+    ):
         super().__init__(image_size)
         self._model = SwinIR(
             upscale=1,
@@ -47,14 +53,15 @@ class SwinWR(WRmodel):
             self._model.conv_last.bias.requires_grad = True
 
         # define optimizer and loss func
-        self._optimizer = optim.Adam(self._model.parameters(), lr=0.001, weight_decay=0.0001)
+        self._optimizer = optim.Adam(
+            self._model.parameters(), lr=0.001, weight_decay=0.0001
+        )
         self._lossfn = nn.L1Loss()
-    
+
         # define device to run on
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self._model.to(self._devicde)
-        print('Running model on ' + self._device)
-
+        self._model.to(self._device)
+        print(f"Running model on {self._device}")
 
     def _decode_output(self, x):
         x = x.cpu().detach().numpy()
@@ -72,18 +79,16 @@ class SwinWR(WRmodel):
 
     def forward_pass(self, x):
         return self._model(x)
-    
+
     def save(self, path):
         torch.save(self._model.state_dict(), path)
 
     def load(self, path):
-        self._model.load_state_dict(
-            torch.load(path)
-        )
+        self._model.load_state_dict(torch.load(path))
 
-    def train_epoch(self, trainset: ChunkedWatermarkedSet, epoch=0, verbose=True):
+    def train_epoch(self, dataloader: DataLoader, epoch=0, verbose=True):
         epoch_loss = 0
-        for i, (x, y_hat) in enumerate(trainset):
+        for i, (x, y_hat) in enumerate(iter(dataloader)):
             # zero the parameter gradients
             self._optimizer.zero_grad()
 
@@ -99,11 +104,11 @@ class SwinWR(WRmodel):
             # print statistics
             if verbose:
                 running_loss += loss.item()
-                if i % 2000 == 1999:    # print every 2000 mini-batches
-                    print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
+                if i % 2000 == 1999:  # print every 2000 mini-batches
+                    print(f"[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}")
                     running_loss = 0.0
-        
-        return epoch_loss / len(trainset)
+
+        return epoch_loss / len(dataloader)
 
     def test(self, testset: ChunkedWatermarkedSet):
         with torch.no_grad():
@@ -111,23 +116,44 @@ class SwinWR(WRmodel):
                 self._lossfn(self.forward_pass(x), y_hat).item() for x, y_hat in testset
             )
 
-    def train(self, n_epochs=-1, val_stop=5, save_path='.', save_every=-1):
+    def train(
+        self,
+        n_epochs=-1,
+        val_stop=5,
+        save_path=".",
+        save_every=-1,
+        data_shuffle=True,
+        data_num_workers=0,
+    ):
         # load train and validtion sets
-        train_set = ChunkedWatermarkedSet()
-        validation_set = ChunkedWatermarkedSet() # important todo: change this with the validation set
+        train_data_loader = DataLoader(
+            ChunkedWatermarkedSet(data_set_type=DataSetType.Test),
+            batch_size=1,
+            shuffle=data_shuffle,
+            num_workers=data_num_workers,
+        )
+
+        validation_data_loader = DataLoader(
+            ChunkedWatermarkedSet(data_set_type=DataSetType.Validation),
+            batch_size=1,
+            shuffle=data_shuffle,
+            num_workers=data_num_workers,
+        )
 
         epoch = 0
         train_losses = []
         val_losses = []
         while n_epochs < 0 or epoch < n_epochs:
             # train the model one epoch
-            train_loss = self.train_epoch(train_set, epoch)
+            train_loss = self.train_epoch(train_data_loader, epoch)
 
             # test on the validation set
-            val_loss = self.test(validation_set)
+            val_loss = self.test(validation_data_loader)
 
             # print epoch summary
-            print(f'Epoch {epoch} summary:\nTrain loss: {train_loss}\nValidation loss: {val_loss}\n')
+            print(
+                f"Epoch {epoch} summary:\nTrain loss: {train_loss}\nValidation loss: {val_loss}\n"
+            )
 
             # log losses
             val_losses.append(val_loss)
@@ -135,21 +161,25 @@ class SwinWR(WRmodel):
 
             # save model if necessary
             if save_every > 0 and (epoch + 1) % save_every == 0:
-                self.save(os.path.join(save_path, f'ckpt_{epoch}.pth'))
+                self.save(os.path.join(save_path, f"ckpt_{epoch}.pth"))
 
             # if validation loss hasn't improved in val_loss epochs, stop training
-            if val_stop > 0 and len(val_losses) >= val_stop and \
-                np.mean(val_losses[-val_stop + 1:]) > val_losses[-val_stop]:
-                print(f'Validation loss hasn\'t improved in {val_stop} epochs. Stopping training...')
+            if (
+                val_stop > 0
+                and len(val_losses) >= val_stop
+                and np.mean(val_losses[-val_stop + 1 :]) > val_losses[-val_stop]
+            ):
+                print(
+                    f"Validation loss hasn't improved in {val_stop} epochs. Stopping training..."
+                )
                 break
 
             epoch += 1
-        
-        return train_losses, val_losses
 
+        return train_losses, val_losses
 
 
 if __name__ == "__main__":
     with torch.no_grad():
         model = SwinWR()
-        Image.fromarray(model("../resources/dataset/input/0c3ee986fa326b1a_7.jpg")).show()
+        model.train()
