@@ -164,8 +164,8 @@ class SwinWR(SwinWRBase):
 
             # print epoch summary
             print(f"Epoch {epoch} summary:")
-            print("Train loss: {train_loss}")
-            print("Validation loss: {val_loss}\n")
+            print(f"Train loss: {train_loss}")
+            print(f"Validation loss: {val_loss}\n")
 
             # log losses
             val_losses.append(val_loss)
