@@ -189,6 +189,7 @@ class SwinWR(SwinWRBase):
 
             epoch += 1
 
+        self.save(os.path.join(save_path, "final.pth"))
         return train_losses, val_losses
 
 
