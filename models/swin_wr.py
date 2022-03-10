@@ -153,6 +153,9 @@ class SwinWR(SwinWRBase):
             num_workers=data_num_workers,
         )
 
+        # make sure save path exists
+        os.makedirs(save_path, exist_ok=True)
+
         epoch = 0
         train_losses = []
         val_losses = []
