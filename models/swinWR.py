@@ -1,8 +1,5 @@
 import sys
 from pathlib import Path
-from turtle import forward
-
-from models.transform import TRANSFORM
 
 sys.path.append(Path(__file__).parents[1].absolute().as_posix())
 import os
@@ -11,9 +8,8 @@ import numpy as np
 from PIL import Image
 
 from swinir.models.network_swinir import SwinIR
-from models.wrmodel import WRmodel
-from models.data_set import ChunkedWatermarkedSet, DataSetType
-from torch.utils.data import DataLoader
+from wrmodel import WRmodel
+from data_set import ChunkedWatermarkedSet
 import torch
 from torch import nn
 from torch import optim
@@ -61,7 +57,7 @@ class SwinWR(WRmodel):
         # define device to run on
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._model.to(self._device)
-        print(f"Running model on {self._device}")
+        print("Running model on " + self._device)
 
     def _decode_output(self, x):
         x = x.cpu().detach().numpy()
@@ -86,9 +82,9 @@ class SwinWR(WRmodel):
     def load(self, path):
         self._model.load_state_dict(torch.load(path))
 
-    def train_epoch(self, dataloader: DataLoader, epoch=0, verbose=True):
+    def train_epoch(self, trainset: ChunkedWatermarkedSet, epoch=0, verbose=True):
         epoch_loss = 0
-        for i, (x, y_hat) in enumerate(iter(dataloader)):
+        for i, (x, y_hat) in enumerate(trainset):
             # zero the parameter gradients
             self._optimizer.zero_grad()
 
@@ -108,7 +104,7 @@ class SwinWR(WRmodel):
                     print(f"[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}")
                     running_loss = 0.0
 
-        return epoch_loss / len(dataloader)
+        return epoch_loss / len(trainset)
 
     def test(self, testset: ChunkedWatermarkedSet):
         with torch.no_grad():
@@ -116,39 +112,22 @@ class SwinWR(WRmodel):
                 self._lossfn(self.forward_pass(x), y_hat).item() for x, y_hat in testset
             )
 
-    def train(
-        self,
-        n_epochs=-1,
-        val_stop=5,
-        save_path=".",
-        save_every=-1,
-        data_shuffle=True,
-        data_num_workers=0,
-    ):
+    def train(self, n_epochs=-1, val_stop=5, save_path=".", save_every=-1):
         # load train and validtion sets
-        train_data_loader = DataLoader(
-            ChunkedWatermarkedSet(data_set_type=DataSetType.Test),
-            batch_size=1,
-            shuffle=data_shuffle,
-            num_workers=data_num_workers,
-        )
-
-        validation_data_loader = DataLoader(
-            ChunkedWatermarkedSet(data_set_type=DataSetType.Validation),
-            batch_size=1,
-            shuffle=data_shuffle,
-            num_workers=data_num_workers,
-        )
+        train_set = ChunkedWatermarkedSet()
+        validation_set = (
+            ChunkedWatermarkedSet()
+        )  # important todo: change this with the validation set
 
         epoch = 0
         train_losses = []
         val_losses = []
         while n_epochs < 0 or epoch < n_epochs:
             # train the model one epoch
-            train_loss = self.train_epoch(train_data_loader, epoch)
+            train_loss = self.train_epoch(train_set, epoch)
 
             # test on the validation set
-            val_loss = self.test(validation_data_loader)
+            val_loss = self.test(validation_set)
 
             # print epoch summary
             print(
@@ -182,4 +161,6 @@ class SwinWR(WRmodel):
 if __name__ == "__main__":
     with torch.no_grad():
         model = SwinWR()
-        model.train()
+        Image.fromarray(
+            model("../resources/dataset/input/0c3ee986fa326b1a_7.jpg")
+        ).show()
