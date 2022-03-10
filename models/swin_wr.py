@@ -197,5 +197,12 @@ class SwinWR(SwinWRBase):
 
 
 if __name__ == "__main__":
-    model = SwinWR()
-    model.train(batch_size=1)
+    SwinWR().train(
+        n_epochs=50,
+        val_stop=5,
+        save_path="./SwinWR1_b16",
+        save_every=1,
+        data_shuffle=True,
+        data_num_workers=0,
+        batch_size=16,
+    )
