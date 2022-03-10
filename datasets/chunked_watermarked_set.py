@@ -44,7 +44,7 @@ class ChunkedWatermarkedSet(VisionDataset):
 
         # Get all watermarked images that still have existing originals
         data_set_paths = [
-            jpg_in_watermarked_dataset
+            jpg_in_watermarked_dataset.name
             for jpg_in_watermarked_dataset in OUTPUT_DIR.glob("*.jpg")
             if DATASET_DIR.joinpath(jpg_in_watermarked_dataset.name).exists
         ]
@@ -99,3 +99,10 @@ class ChunkedWatermarkedSet(VisionDataset):
 
     def __len__(self) -> int:
         return len(self.data_set_names)
+
+
+if __name__ == "__main__":
+    dataset = ChunkedWatermarkedSet(data_set_type=DataSetType.Training)
+    watermarked_test, original_test = dataset[0]
+    to_pil_image(watermarked_test).show()
+    to_pil_image(original_test).show()
