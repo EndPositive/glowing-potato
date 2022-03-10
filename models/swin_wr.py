@@ -136,14 +136,18 @@ class SwinWR(SwinWRBase):
     ):
         # load train and validation sets
         train_data_loader = DataLoader(
-            ChunkedWatermarkedSet(data_set_type=DataSetType.Training),
+            ChunkedWatermarkedSet(
+                data_set_type=DataSetType.Training, device=self._device
+            ),
             batch_size=batch_size,
             shuffle=data_shuffle,
             num_workers=data_num_workers,
         )
 
         validation_data_loader = DataLoader(
-            ChunkedWatermarkedSet(data_set_type=DataSetType.Validation),
+            ChunkedWatermarkedSet(
+                data_set_type=DataSetType.Validation, device=self._device
+            ),
             batch_size=batch_size,
             shuffle=data_shuffle,
             num_workers=data_num_workers,

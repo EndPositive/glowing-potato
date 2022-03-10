@@ -29,6 +29,7 @@ class ChunkedWatermarkedSet(VisionDataset):
     def __init__(
         self,
         data_set_type: DataSetType,
+        device: torch.device,
         transforms: Callable = TRANSFORM,
         split_size=(0.7, 0.1, 0.2),
         watermarked_dir=OUTPUT_DIR,
@@ -38,6 +39,8 @@ class ChunkedWatermarkedSet(VisionDataset):
 
         self.watermarked_dir = watermarked_dir
         self.original_dir = original_dir
+
+        self.device = device
 
         if (split_sum := sum(split_size)) != 1:
             raise ValueError(f"Split size should sum to 1 {split_size} -> {split_sum}")
@@ -78,10 +81,10 @@ class ChunkedWatermarkedSet(VisionDataset):
         # Read watermarked and original images as Tensors
         watermarked = read_image(
             self.__get_watermarked_path(self.data_set_names[index]).as_posix()
-        )
+        ).to(device=self.device)
         original = read_image(
             self.__get_original_path(self.data_set_names[index]).as_posix()
-        )
+        ).to(device=self.device)
 
         # Set new seed so that watermarked and original transforms both have the same randomness
         seed = math.floor(random.random() * 100000)
