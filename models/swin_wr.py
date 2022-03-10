@@ -22,7 +22,7 @@ class SwinWR(SwinWRBase):
         inner_model: SwinIR = SwinIRMulti,
         train_last_layer_only=True,
         load_path=None,
-        n_input_images=2,
+        n_input_images=1,
     ):
         super().__init__(image_size)
         self._model = inner_model(
