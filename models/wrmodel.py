@@ -8,7 +8,6 @@ from abc import abstractmethod
 from preprocessing import formatter as processing
 import numpy as np
 
-from data_set import ChunkedWatermarkedSet
 from torch.utils.data import DataLoader
 
 
@@ -69,10 +68,6 @@ class WRmodel:
 
     @abstractmethod
     def load(self, path):
-        pass
-
-    @abstractmethod
-    def train_epoch(self, trainset: ChunkedWatermarkedSet):
         pass
 
     @abstractmethod

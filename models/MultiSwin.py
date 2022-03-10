@@ -1,4 +1,3 @@
-from swinWR import SwinWR
 from swinir.models.network_swinir import SwinIR
 
 from torch import nn
@@ -60,7 +59,7 @@ class MultiSwin(SwinIR):
 
         num_out_ch = in_chans
         self.n_input_images = n_input_images
-        self.our_conv_layer = nn.Conv2d(embed_dim * n_input_images, num_out_ch, 3, 1, 1)
+        self.conv_last = nn.Conv2d(embed_dim * n_input_images, num_out_ch, 3, 1, 1)
 
     def forward(self, x):
         # x has shape (batch_size * n_input_images, 3, H, W)
@@ -74,7 +73,7 @@ class MultiSwin(SwinIR):
         res = self.conv_after_body(self.forward_features(x_first)) + x_first
 
         # (batch_size * n_input_images, embed_dim, H, W) -> (batch_size, n_input_images, embed_dim, H, W)
-        res = torch.split(res, batch_size)
+        res = torch.reshape(res, (batch_size, self.n_input_images, self.embed_dim, H, W))
 
         # transform to (batch_size, n_input_images * embed_dim, H, W)
         res = torch.reshape(
@@ -82,7 +81,7 @@ class MultiSwin(SwinIR):
         )
 
         # last conv
-        x = x + self.our_conv_layer(res)
+        x = x + self.conv_last(res)
 
         # batch normalization
         x = x / self.img_range + self.mean

@@ -1,14 +1,14 @@
 import sys
 from pathlib import Path
-
-sys.path.append(Path(__file__).parents[1].absolute().as_posix())
 import os
 
-import numpy as np
+sys.path.append(Path(__file__).parents[1].absolute().as_posix())
 
+import numpy as np
 from swinir.models.network_swinir import SwinIR
 from models.wrmodel import WRmodel
 from models.data_set import ChunkedWatermarkedSet, DataSetType
+from models.MultiSwin import MultiSwin
 from torch.utils.data import DataLoader
 import torch
 from torch import nn
@@ -17,10 +17,15 @@ from torch import optim
 
 class SwinWR(WRmodel):
     def __init__(
-            self, image_size=(128, 128), train_last_layer_only=True, load_path=None
+            self,
+            image_size=(128, 128),
+            inner_model: SwinIR = MultiSwin,
+            train_last_layer_only=True,
+            load_path=None,
+            n_input_images=2
     ):
         super().__init__(image_size)
-        self._model = SwinIR(
+        self._model = inner_model(
             upscale=1,
             in_chans=3,
             img_size=self.image_size[0],
@@ -32,17 +37,23 @@ class SwinWR(WRmodel):
             mlp_ratio=2,
             upsampler="",
             resi_connection="1conv",
+            n_input_images=n_input_images
         )
 
         if load_path is None:
-            self._model.load_state_dict(
-                torch.utils.model_zoo.load_url(
-                    "https://github.com/JingyunLiang/SwinIR/releases/download/v0.0/005_colorDN_DFWB_s128w8_SwinIR-M_noise50.pth"
-                )["params"]
-            )
+            # download pretrained model
+            state_dict = torch.utils.model_zoo.load_url(
+                "https://github.com/JingyunLiang/SwinIR/releases/download/v0.0/005_colorDN_DFWB_s128w8_SwinIR-M_noise50.pth"
+            )["params"]
+
+            # remove the weights from the last layer (otherwise pytorch complains)
+            del state_dict['conv_last.weight']
+            del state_dict['conv_last.bias']
+        else:
+            self.load(load_path)
 
         if train_last_layer_only:
-            for _, param in self._model.named_parameters():
+            for param in self._model.parameters():
                 param.requires_grad = False
 
             self._model.conv_last.weight.requires_grad = True
@@ -82,8 +93,7 @@ class SwinWR(WRmodel):
     def load(self, path):
         self._model.load_state_dict(torch.load(path))
 
-    # todo: change log_every to -1
-    def train_epoch(self, dataloader: DataLoader, epoch=0, log_every=1):
+    def train_epoch(self, dataloader: DataLoader, epoch=0, log_every=-1):
         epoch_loss = 0
         running_loss = 0
         for i, (x, y_hat) in enumerate(iter(dataloader)):
