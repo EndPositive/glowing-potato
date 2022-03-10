@@ -1,6 +1,4 @@
 import os
-import sys
-from pathlib import Path
 
 import numpy as np
 import torch
@@ -11,8 +9,6 @@ from datasets.chunked_watermarked_set import ChunkedWatermarkedSet, DataSetType
 from models.swin_ir_multi import SwinIRMulti
 from models.swin_wr_base import SwinWRBase
 from swinir.models.network_swinir import SwinIR
-
-sys.path.append(Path(__file__).parents[1].absolute().as_posix())
 
 
 class SwinWR(SwinWRBase):
