@@ -7,12 +7,12 @@ import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
+sys.path.append(Path(__file__).parents[1].absolute().as_posix())
+
 from datasets.chunked_watermarked_set import ChunkedWatermarkedSet, DataSetType
 from models.swin_ir_multi import SwinIRMulti
 from models.swin_wr_base import SwinWRBase
 from swinir.models.network_swinir import SwinIR
-
-sys.path.append(Path(__file__).parents[1].absolute().as_posix())
 
 
 class SwinWR(SwinWRBase):
