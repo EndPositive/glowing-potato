@@ -121,7 +121,8 @@ class SwinWR(SwinWRBase):
     def test(self, testset: DataLoader):
         with torch.no_grad():
             return np.mean(
-                self._lossfn(self.forward_pass(x), y_hat).item() for x, y_hat in testset
+                self._lossfn(self.forward_pass(x), y_hat).item()
+                for x, y_hat in iter(testset)
             )
 
     def train(
