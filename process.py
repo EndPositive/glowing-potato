@@ -12,7 +12,6 @@ from prompt_toolkit.shortcuts import confirm
 from preprocessing import DATASET_DIR, OUTPUT_DIR
 from preprocessing.data_pipeline import process_default_pool
 
-
 logger = logging.getLogger(__name__)
 
 SEED = None

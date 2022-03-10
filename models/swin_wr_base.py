@@ -1,17 +1,14 @@
-import sys
-
-sys.path.append("..")
-
-from pathlib import Path
-from PIL import Image
 from abc import abstractmethod
-from preprocessing import formatter as processing
-import numpy as np
+from pathlib import Path
 
+import numpy as np
+from PIL import Image
 from torch.utils.data import DataLoader
 
+from preprocessing import formatter as processing
 
-class WRmodel:
+
+class SwinWRBase:
     def __init__(self, image_size=(128, 128)):
         # constants
         self.image_size = image_size

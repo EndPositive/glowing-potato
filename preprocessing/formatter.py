@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
-from PIL import Image
 from numpy import ndarray
+from PIL import Image
 
 
 def pad(img: Union[ndarray, Image.Image], align_to, return_padding=False):

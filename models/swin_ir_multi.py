@@ -1,10 +1,10 @@
+import torch
+from torch import nn
+
 from swinir.models.network_swinir import SwinIR
 
-from torch import nn
-import torch
 
-
-class MultiSwin(SwinIR):
+class SwinIRMulti(SwinIR):
     def __init__(
         self,
         img_size=64,
@@ -73,7 +73,9 @@ class MultiSwin(SwinIR):
         res = self.conv_after_body(self.forward_features(x_first)) + x_first
 
         # (batch_size * n_input_images, embed_dim, H, W) -> (batch_size, n_input_images, embed_dim, H, W)
-        res = torch.reshape(res, (batch_size, self.n_input_images, self.embed_dim, H, W))
+        res = torch.reshape(
+            res, (batch_size, self.n_input_images, self.embed_dim, H, W)
+        )
 
         # transform to (batch_size, n_input_images * embed_dim, H, W)
         res = torch.reshape(

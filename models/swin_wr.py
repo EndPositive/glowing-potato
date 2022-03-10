@@ -1,28 +1,28 @@
+import os
 import sys
 from pathlib import Path
-import os
+
+import numpy as np
+import torch
+from torch import nn, optim
+from torch.utils.data import DataLoader
+
+from datasets.chunked_watermarked_set import ChunkedWatermarkedSet, DataSetType
+from models.swin_ir_multi import SwinIRMulti
+from models.swin_wr_base import SwinWRBase
+from swinir.models.network_swinir import SwinIR
 
 sys.path.append(Path(__file__).parents[1].absolute().as_posix())
 
-import numpy as np
-from swinir.models.network_swinir import SwinIR
-from models.wrmodel import WRmodel
-from models.data_set import ChunkedWatermarkedSet, DataSetType
-from models.MultiSwin import MultiSwin
-from torch.utils.data import DataLoader
-import torch
-from torch import nn
-from torch import optim
 
-
-class SwinWR(WRmodel):
+class SwinWR(SwinWRBase):
     def __init__(
-            self,
-            image_size=(128, 128),
-            inner_model: SwinIR = MultiSwin,
-            train_last_layer_only=True,
-            load_path=None,
-            n_input_images=2
+        self,
+        image_size=(128, 128),
+        inner_model: SwinIR = SwinIRMulti,
+        train_last_layer_only=True,
+        load_path=None,
+        n_input_images=2,
     ):
         super().__init__(image_size)
         self._model = inner_model(
@@ -37,7 +37,7 @@ class SwinWR(WRmodel):
             mlp_ratio=2,
             upsampler="",
             resi_connection="1conv",
-            n_input_images=n_input_images
+            n_input_images=n_input_images,
         )
 
         if load_path is None:
@@ -47,8 +47,8 @@ class SwinWR(WRmodel):
             )["params"]
 
             # remove the weights from the last layer (otherwise pytorch complains)
-            del state_dict['conv_last.weight']
-            del state_dict['conv_last.bias']
+            del state_dict["conv_last.weight"]
+            del state_dict["conv_last.bias"]
         else:
             self.load(load_path)
 
@@ -113,7 +113,9 @@ class SwinWR(WRmodel):
             if log_every > 0:
                 running_loss += loss.item()
                 if (i + 1) % log_every == 0:
-                    print(f"[{epoch + 1}, {i + 1:5d}] loss: {running_loss / log_every:.3f}")
+                    print(
+                        f"[{epoch + 1}, {i + 1:5d}] loss: {running_loss / log_every:.3f}"
+                    )
                     running_loss = 0
 
         return epoch_loss / len(dataloader)
@@ -125,14 +127,14 @@ class SwinWR(WRmodel):
             )
 
     def train(
-            self,
-            n_epochs=-1,
-            val_stop=5,
-            save_path=".",
-            save_every=-1,
-            data_shuffle=True,
-            data_num_workers=0,
-            batch_size=16
+        self,
+        n_epochs=-1,
+        val_stop=5,
+        save_path=".",
+        save_every=-1,
+        data_shuffle=True,
+        data_num_workers=0,
+        batch_size=16,
     ):
         # load train and validation sets
         train_data_loader = DataLoader(
@@ -173,8 +175,10 @@ class SwinWR(WRmodel):
                 self.save(os.path.join(save_path, f"ckpt_{epoch}.pth"))
 
             # if validation loss hasn't improved in val_loss epochs, stop training
-            if 0 < val_stop <= len(val_losses) and \
-                    np.mean(val_losses[-val_stop + 1:]) > val_losses[-val_stop]:
+            if (
+                0 < val_stop <= len(val_losses)
+                and np.mean(val_losses[-val_stop + 1 :]) > val_losses[-val_stop]
+            ):
                 print(
                     f"Validation loss hasn't improved in {val_stop} epochs. Stopping training..."
                 )

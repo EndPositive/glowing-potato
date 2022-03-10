@@ -6,3 +6,6 @@ extend-exclude = '''
      swinir
 )/
 '''
+
+[tool.isort]
+profile = "black"

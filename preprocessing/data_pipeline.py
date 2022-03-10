@@ -1,18 +1,14 @@
 import logging
-import re
 import time
 from multiprocessing import Pool
 from pathlib import Path
 from typing import List, Tuple
 
-from PIL import Image
 from tqdm import tqdm
 
 from preprocessing import EDGE_DIR, OUTPUT_DIR
 from preprocessing.custom_pool import CustomPool
-from preprocessing.formatter import split_image
 from preprocessing.watermarker import Watermarker
-
 
 logger = logging.getLogger(__name__)
 
