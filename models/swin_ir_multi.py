@@ -72,7 +72,8 @@ class SwinIRMulti(SwinIR):
         x_first = self.conv_first(x)
         res = self.conv_after_body(self.forward_features(x_first)) + x_first
 
-        # (batch_size * n_input_images, embed_dim, H, W) -> (batch_size, n_input_images, embed_dim, H, W)
+        # (batch_size * n_input_images, embed_dim, H, W) ->
+        # (batch_size,  n_input_images, embed_dim, H, W)
         res = torch.reshape(
             res, (batch_size, self.n_input_images, self.embed_dim, H, W)
         )

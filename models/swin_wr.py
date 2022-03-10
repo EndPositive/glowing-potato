@@ -7,12 +7,12 @@ import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
-sys.path.append(Path(__file__).parents[1].absolute().as_posix())
-
 from datasets.chunked_watermarked_set import ChunkedWatermarkedSet, DataSetType
 from models.swin_ir_multi import SwinIRMulti
 from models.swin_wr_base import SwinWRBase
 from swinir.models.network_swinir import SwinIR
+
+sys.path.append(Path(__file__).parents[1].absolute().as_posix())
 
 
 class SwinWR(SwinWRBase):
@@ -43,7 +43,8 @@ class SwinWR(SwinWRBase):
         if load_path is None:
             # download pretrained model
             state_dict = torch.utils.model_zoo.load_url(
-                "https://github.com/JingyunLiang/SwinIR/releases/download/v0.0/005_colorDN_DFWB_s128w8_SwinIR-M_noise50.pth"
+                "https://github.com/JingyunLiang/SwinIR/releases/download/v0.0/"
+                "005_colorDN_DFWB_s128w8_SwinIR-M_noise50.pth"
             )["params"]
 
             # remove the weights from the last layer (otherwise pytorch complains)
@@ -114,7 +115,8 @@ class SwinWR(SwinWRBase):
                 running_loss += loss.item()
                 if (i + 1) % log_every == 0:
                     print(
-                        f"[{epoch + 1}, {i + 1:5d}] loss: {running_loss / log_every:.3f}"
+                        f"[{epoch + 1}, {i + 1:5d}] "
+                        "loss: {running_loss / log_every:.3f}"
                     )
                     running_loss = 0
 
@@ -162,9 +164,9 @@ class SwinWR(SwinWRBase):
             val_loss = self.test(validation_data_loader)
 
             # print epoch summary
-            print(
-                f"Epoch {epoch} summary:\nTrain loss: {train_loss}\nValidation loss: {val_loss}\n"
-            )
+            print(f"Epoch {epoch} summary:")
+            print("Train loss: {train_loss}")
+            print("Validation loss: {val_loss}\n")
 
             # log losses
             val_losses.append(val_loss)
@@ -180,7 +182,8 @@ class SwinWR(SwinWRBase):
                 and np.mean(val_losses[-val_stop + 1 :]) > val_losses[-val_stop]
             ):
                 print(
-                    f"Validation loss hasn't improved in {val_stop} epochs. Stopping training..."
+                    f"Validation loss hasn't improved in {val_stop} epochs. "
+                    "Stopping training..."
                 )
                 break
 
