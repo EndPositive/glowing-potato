@@ -1,17 +1,15 @@
-from asyncio import BaseTransport
-from contextlib import AbstractAsyncContextManager
 import sys
 
 sys.path.append("..")
 
 from pathlib import Path
 from PIL import Image
-from abc import abstractclassmethod
-from collections.abc import Iterable
+from abc import abstractmethod
 from preprocessing import formatter as processing
 import numpy as np
 
 from data_set import ChunkedWatermarkedSet
+from torch.utils.data import DataLoader
 
 
 class WRmodel:
@@ -19,19 +17,19 @@ class WRmodel:
         # constants
         self.image_size = image_size
 
-    @abstractclassmethod
-    def train_epoch(self):
+    @abstractmethod
+    def train_epoch(self, dataloader: DataLoader, epoch=0, verbose=True):
         pass
 
-    @abstractclassmethod
-    def forward_pass(self):
+    @abstractmethod
+    def forward_pass(self, x):
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def _encode_input(self, x):
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def _decode_output(self, y):
         pass
 
@@ -65,18 +63,18 @@ class WRmodel:
         # unpad and return
         return processing.unpad(unsplit, padding)
 
-    @abstractclassmethod
+    @abstractmethod
     def save(self, path):
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def load(self, path):
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def train_epoch(self, trainset: ChunkedWatermarkedSet):
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def train(self, n_epochs=0):
         pass
