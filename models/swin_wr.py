@@ -46,6 +46,8 @@ class SwinWR(SwinWRBase):
             # remove the weights from the last layer (otherwise pytorch complains)
             del state_dict["conv_last.weight"]
             del state_dict["conv_last.bias"]
+
+            self._model.load_state_dict(state_dict, strict=False)
         else:
             self.load(load_path)
 
