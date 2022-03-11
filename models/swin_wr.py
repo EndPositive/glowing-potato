@@ -5,10 +5,14 @@ import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
 
+import preprocessing
 from datasets.chunked_watermarked_set import ChunkedWatermarkedSet, DataSetType
 from models.swin_ir_multi import SwinIRMulti
 from models.swin_wr_base import SwinWRBase
 from swinir.models.network_swinir import SwinIR
+
+
+EMBED_DIM = 180
 
 
 class SwinWR(SwinWRBase):
@@ -21,6 +25,7 @@ class SwinWR(SwinWRBase):
         n_input_images=1,
     ):
         super().__init__(image_size)
+
         self._model = inner_model(
             upscale=1,
             in_chans=3,
@@ -28,12 +33,12 @@ class SwinWR(SwinWRBase):
             window_size=8,
             img_range=1.0,
             depths=[6, 6, 6, 6, 6, 6],
-            embed_dim=180,
+            embed_dim=EMBED_DIM,
             num_heads=[6, 6, 6, 6, 6, 6],
             mlp_ratio=2,
             upsampler="",
             resi_connection="1conv",
-            n_input_images=n_input_images,
+            n_input_images=n_input_images
         )
 
         if load_path is None:
@@ -46,6 +51,8 @@ class SwinWR(SwinWRBase):
             # remove the weights from the last layer (otherwise pytorch complains)
             del state_dict["conv_last.weight"]
             del state_dict["conv_last.bias"]
+
+            self._model.load_state_dict(state_dict, strict=False)
         else:
             self.load(load_path)
 
@@ -78,10 +85,7 @@ class SwinWR(SwinWRBase):
         x = np.transpose(x, (0, 3, 1, 2)) / 255  # convert to channels first
         return torch.from_numpy(x).float().to("cpu")
 
-    def __call__(self, img):
-        return self.predict(img)
-
-    def forward_pass(self, x):
+    def forward(self, x):
         return self._model(x)
 
     def save(self, path):
@@ -98,7 +102,7 @@ class SwinWR(SwinWRBase):
             self._optimizer.zero_grad()
 
             # forward + backward + optimize
-            y = self.forward_pass(x)
+            y = self(x)
             loss = self._lossfn(y, y_hat)
             loss.backward()
             self._optimizer.step()
@@ -198,14 +202,33 @@ class SwinWR(SwinWRBase):
         self.save(os.path.join(save_path, "final.pth"))
         return train_losses, val_losses
 
+    def precompute_dataset(self, batch_size=64, output_to=preprocessing.OUTPUT_DIR_PRECOMPUTED):
+        train_data_loader = DataLoader(
+            ChunkedWatermarkedSet(
+                data_set_type=DataSetType.Training, device=self._device, include_fn=True
+            ),
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=0,
+        )
+
+        for i, (x, _, fn) in enumerate(iter(train_data_loader)):
+            features, residual = self._model.forward_feature_extraction(x)
+            features = x.cpu().detach().numpy()
+            residual = x.cpu().detach().numpy()
+
+    def train_last_from(self, x, y_hat):
+        for _ in range(1000):
+            # zero the parameter gradients
+            self._optimizer.zero_grad()
+
+            # forward + backward + optimize
+            y = self._model.forward_last(x[0], x[1])
+            loss = self._lossfn(y, y_hat)
+            loss.backward()
+            self._optimizer.step()
+
 
 if __name__ == "__main__":
-    SwinWR().train(
-        n_epochs=50,
-        val_stop=5,
-        save_path="./SwinWR1_b16",
-        save_every=1,
-        data_shuffle=True,
-        data_num_workers=0,
-        batch_size=16,
-    )
+    m = SwinWR()
+    m.precompute_dataset()

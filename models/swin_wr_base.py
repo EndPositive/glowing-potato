@@ -4,13 +4,14 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from torch.utils.data import DataLoader
+from torch import nn
 
 from preprocessing import formatter as processing
 
 
-class SwinWRBase:
+class SwinWRBase(nn.Module):
     def __init__(self, image_size=(128, 128)):
-        # constants
+        super().__init__()
         self.image_size = image_size
 
     @abstractmethod
@@ -18,7 +19,7 @@ class SwinWRBase:
         pass
 
     @abstractmethod
-    def forward_pass(self, x):
+    def forward(self, x):
         pass
 
     @abstractmethod
