@@ -3,9 +3,10 @@ import math
 import random
 from pathlib import Path
 from string import ascii_letters
+from typing import Tuple, Union
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
 from preprocessing import EDGE_DIR, RESOURCES_DIR
 
@@ -47,16 +48,32 @@ class Watermarker:
             RESOURCES_DIR.joinpath("calibri.ttf").as_posix(), FONT_SIZE
         ),
     ):
-        if not image_path.suffix == ".jpg":
-            raise ValueError("File is not a jpg")
+        image, error = Watermarker.load_image(image_path)
+        if error:
+            raise error
+
+        self.image = image
 
         self.filename = image_path.name
         self.font = font
-        self.image = Image.open(image_path.as_posix())
-        if self.image.mode not in ["RGB", "RGBA"]:
-            raise ValueError(f"{self.filename} has incorrect mode {self.image.mode}")
-
         self.draw = ImageDraw.Draw(self.image, "RGBA")
+
+    @staticmethod
+    def load_image(
+        image_path: Path,
+    ) -> Tuple[Union[Image.Image, None], Union[Exception, None]]:
+        if not image_path.suffix == ".jpg":
+            return None, ValueError("File is not a jpg")
+
+        try:
+            image = Image.open(image_path.as_posix())
+        except (FileNotFoundError, UnidentifiedImageError, ValueError, TypeError) as e:
+            return None, e
+
+        if image.mode not in ["RGB"]:
+            return None, ValueError(f"File has incorrect mode {image.mode}")
+
+        return image, None
 
     def rotated_text(
         self, angle, xy, text, fill, upscale=False, center_coords=False, *args, **kwargs

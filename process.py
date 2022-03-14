@@ -12,7 +12,6 @@ from prompt_toolkit.shortcuts import confirm
 from preprocessing import DATASET_DIR, OUTPUT_DIR
 from preprocessing.data_pipeline import process_default_pool
 
-
 logger = logging.getLogger(__name__)
 
 SEED = None
@@ -44,9 +43,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-r", "--reset", action="store_true", help=f"Recreate directory {OUTPUT_DIR}"
-    )
-    parser.add_argument(
-        "-s", "--chunk-size", default=128, type=int, help="Image split size"
     )
     parser.add_argument(
         "-log",
@@ -83,7 +79,7 @@ if __name__ == "__main__":
 
     start = time.perf_counter()
 
-    process_default_pool(input_jpgs, OUTPUT_DIR, options.chunk_size, options.overwrite)
+    process_default_pool(input_jpgs, OUTPUT_DIR, options.overwrite)
 
     logger.debug(
         "Processed %d images in %d seconds",
