@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from torch import nn
 from datasets.chunked_watermarked_set import DataSetType, ChunkedWatermarkedSet
 from datasets.swin_precomputed_set import SwinPrecomputedSet
+from torchvision.datasets import VisionDataset
 
 from preprocessing import formatter as processing
 
@@ -63,14 +64,16 @@ class SwinWRBase(nn.Module):
         data_num_workers=0,
         batch_size=16,
         from_precomputed_set=False,
+        data_set=None
     ):
-        data_set = (
-            SwinPrecomputedSet(data_set_type=DataSetType.Training, device=self._device)
-            if from_precomputed_set
-            else ChunkedWatermarkedSet(
-                data_set_type=DataSetType.Training, device=self._device
+        if data_set is None:
+            data_set = (
+                SwinPrecomputedSet(data_set_type=DataSetType.Training, device=self._device)
+                if from_precomputed_set
+                else ChunkedWatermarkedSet(
+                    data_set_type=DataSetType.Training, device=self._device
+                )
             )
-        )
 
         # load train and validation sets
         train_data_loader = DataLoader(
