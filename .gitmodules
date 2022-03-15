@@ -2,6 +2,6 @@
 	path = swinir
 	url = https://github.com/JingyunLiang/SwinIR.git
 
-[submodule "unet"]
-    path = unet
-    url = https://github.com/milesial/Pytorch-UNet.git
+[submodule "Pytorch-UNet"]
+	path = Pytorch-UNet
+	url = git@github.com:milesial/Pytorch-UNet.git
