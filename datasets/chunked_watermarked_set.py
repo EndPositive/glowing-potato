@@ -3,7 +3,7 @@ import math
 import random
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Union
 
 import numpy as np
 import torch
@@ -34,6 +34,7 @@ class ChunkedWatermarkedSet(VisionDataset):
         split_size=(0.7, 0.1, 0.2),
         watermarked_dir=OUTPUT_DIR,
         original_dir=DATASET_DIR,
+        include_fn=False,  # used for precomputing dataset features
     ) -> None:
         super().__init__(DATASET_DIR, transforms=transforms)
 
@@ -69,6 +70,8 @@ class ChunkedWatermarkedSet(VisionDataset):
         else:
             raise ValueError(f"Unknown data set type {data_set_type}")
 
+        self.include_fn = include_fn
+
         gc.collect()
 
     def __get_watermarked_path(self, name):
@@ -77,7 +80,7 @@ class ChunkedWatermarkedSet(VisionDataset):
     def __get_original_path(self, name):
         return self.original_dir.joinpath(name)
 
-    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+    def __getitem__(self, index: int) -> Union[tuple[Any, Any, Path], tuple[Any, Any]]:
         # Read watermarked and original images as Tensors
         watermarked = read_image(
             self.__get_watermarked_path(self.data_set_names[index]).as_posix()
@@ -86,7 +89,8 @@ class ChunkedWatermarkedSet(VisionDataset):
             self.__get_original_path(self.data_set_names[index]).as_posix()
         ).to(device=self.device)
 
-        # Set new seed so that watermarked and original transforms both have the same randomness
+        # Set new seed so that watermarked and original
+        # transforms both have the same randomness
         seed = math.floor(random.random() * 100000)
         torch.manual_seed(seed)
         random.seed(seed)
@@ -97,6 +101,9 @@ class ChunkedWatermarkedSet(VisionDataset):
         random.seed(seed)
         np.random.seed(seed)
         original = self.transforms(original)
+
+        if self.include_fn:
+            return watermarked, original, self.data_set_names[index]
 
         return watermarked, original
 
