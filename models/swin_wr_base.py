@@ -7,7 +7,8 @@ import torch
 from PIL import Image
 from torch.utils.data import DataLoader
 from torch import nn
-from datasets.chunked_watermarked_set import ChunkedWatermarkedSet, DataSetType
+from datasets.chunked_watermarked_set import DataSetType
+from datasets.swin_precomputed_set import SwinPrecomputedSet
 
 from preprocessing import formatter as processing
 
@@ -22,7 +23,7 @@ class SwinWRBase(nn.Module):
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.image_size = image_size
 
-    def train_epoch(self, dataloader: DataLoader, epoch=0, log_every=-1):
+    def train_epoch(self, dataloader: DataLoader, epoch=0, log_every=-1, from_precomputed_set=False):
         epoch_loss = 0
         running_loss = 0
         for i, (x, y_hat) in enumerate(iter(dataloader)):
@@ -30,7 +31,7 @@ class SwinWRBase(nn.Module):
             self._optimizer.zero_grad()
 
             # forward + backward + optimize
-            y = self(x)
+            y = self.forward_last(x) if from_precomputed_set else self(x)
             loss = self._lossfn(y, y_hat)
             loss.backward()
             self._optimizer.step()
@@ -59,21 +60,26 @@ class SwinWRBase(nn.Module):
         data_shuffle=True,
         data_num_workers=0,
         batch_size=16,
+        from_precomputed_set=False
     ):
+        data_set = SwinPrecomputedSet(
+            data_set_type=DataSetType.Training, device=self._device
+        ) if from_precomputed_set else SwinPrecomputedSet(
+            data_set_type=DataSetType.Training, device=self._device
+        )
+
+        print(len(data_set))
+
         # load train and validation sets
         train_data_loader = DataLoader(
-            ChunkedWatermarkedSet(
-                data_set_type=DataSetType.Training, device=self._device
-            ),
+            data_set,
             batch_size=batch_size,
             shuffle=data_shuffle,
             num_workers=data_num_workers,
         )
 
         validation_data_loader = DataLoader(
-            ChunkedWatermarkedSet(
-                data_set_type=DataSetType.Validation, device=self._device
-            ),
+            data_set,
             batch_size=batch_size,
             shuffle=data_shuffle,
             num_workers=data_num_workers,
@@ -87,10 +93,17 @@ class SwinWRBase(nn.Module):
         val_losses = []
         while n_epochs < 0 or epoch < n_epochs:
             # train the model one epoch
-            train_loss = self.train_epoch(train_data_loader, epoch)
+            train_loss = self.train_epoch(
+                train_data_loader,
+                epoch,
+                from_precomputed_set=from_precomputed_set
+            )
 
             # test on the validation set
-            val_loss = self.test(validation_data_loader)
+            val_loss = self.test(
+                validation_data_loader,
+                from_precomputed_set=from_precomputed_set
+            )
 
             # print epoch summary
             print(f"Epoch {epoch} summary:")
@@ -168,14 +181,20 @@ class SwinWRBase(nn.Module):
     def load(self, path):
         self._model.load_state_dict(torch.load(path))
 
-    def test(self, testset: DataLoader):
+    def test(self, testset: DataLoader, from_precomputed_set=False):
         with torch.no_grad():
             return np.mean(
                 [
-                    self._lossfn(self(x), y_hat).item()
+                    self._lossfn(
+                        self.forward_last(x) if from_precomputed_set else self(x),
+                        y_hat
+                    ).item()
                     for x, y_hat in iter(testset)
                 ]
             )
 
     def forward(self, x):
         return self._model(x)
+
+    def forward_last(self, x):
+        return self.forward(x)

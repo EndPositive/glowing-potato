@@ -62,6 +62,7 @@ class SwinIRMulti(SwinIR):
         self.conv_last = nn.Conv2d(embed_dim * n_input_images, num_out_ch, 3, 1, 1)
 
     def forward_feature_extraction(self, x):
+        print(len(x), type(x))
         # x has shape (batch_size * n_input_images, 3, H, W)
         H, W = x.shape[2:]
         batch_size = x.shape[0] // self.n_input_images

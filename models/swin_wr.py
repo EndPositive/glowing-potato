@@ -1,6 +1,10 @@
+import os
+
+import numpy as np
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 import preprocessing
 from datasets.chunked_watermarked_set import ChunkedWatermarkedSet, DataSetType
@@ -70,7 +74,12 @@ class SwinWR(SwinWRBase):
         self._model.to(self._device)
         print(f"Running model on {self._device}")
 
-    def precompute_dataset(self, batch_size=64, output_to=preprocessing.OUTPUT_DIR_PRECOMPUTED):
+    def precompute_dataset(
+            self,
+            batch_size=64,
+            output_x=preprocessing.INPUT_DIR_PRECOMPUTED,
+            output_y=preprocessing.OUTPUT_DIR_PRECOMPUTED
+    ):
         train_data_loader = DataLoader(
             ChunkedWatermarkedSet(
                 data_set_type=DataSetType.Training, device=self._device, include_fn=True
@@ -80,23 +89,46 @@ class SwinWR(SwinWRBase):
             num_workers=0,
         )
 
-        for i, (x, _, fn) in enumerate(iter(train_data_loader)):
+        # make sure output directory exists
+        os.makedirs(output_x, exist_ok=True)
+        os.makedirs(output_y, exist_ok=True)
+
+        for x, y, fn in tqdm(train_data_loader):
             features, residual = self._model.forward_feature_extraction(x)
-            features = x.cpu().detach().numpy()
-            residual = x.cpu().detach().numpy()
+            features = features.cpu().detach().numpy()
+            residual = residual.cpu().detach().numpy()
 
-    def train_last_from(self, x, y_hat):
-        for _ in range(1000):
-            # zero the parameter gradients
-            self._optimizer.zero_grad()
+            for features_curr, residual_curr, fn_curr in zip(features, residual, fn):
+                # write expected output data to file
+                np.save(
+                    os.path.join(
+                        output_y,
+                        os.path.basename(fn_curr).split('.')[0] + '.npy'
+                    ), y
+                )
 
-            # forward + backward + optimize
-            y = self._model.forward_last(x[0], x[1])
-            loss = self._lossfn(y, y_hat)
-            loss.backward()
-            self._optimizer.step()
+                # write features to file
+                np.save(
+                    os.path.join(
+                        output_x,
+                        os.path.basename(fn_curr).split('.')[0] + f'_features.npy'
+                    ),
+                    features_curr
+                )
+
+                # write residual to file
+                np.save(
+                    os.path.join(
+                        output_x,
+                        os.path.basename(fn_curr).split('.')[0] + f'_residual.npy'
+                    ), residual_curr
+                )
+
+    def forward_last(self, x):
+        return self._model.forward_last(*x)
 
 
 if __name__ == "__main__":
     m = SwinWR()
-    m.train()
+    m.train(from_precomputed_set=True, batch_size=1)
+    # m.precompute_dataset(batch_size=10)

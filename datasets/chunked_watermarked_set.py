@@ -3,7 +3,7 @@ import math
 import random
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, List, Tuple, Optional, Union
+from typing import Any, Callable, List, Union
 
 import numpy as np
 import torch
