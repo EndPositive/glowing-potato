@@ -23,7 +23,9 @@ class SwinWRBase(nn.Module):
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.image_size = image_size
 
-    def train_epoch(self, dataloader: DataLoader, epoch=0, log_every=-1, from_precomputed_set=False):
+    def train_epoch(
+        self, dataloader: DataLoader, epoch=0, log_every=-1, from_precomputed_set=False
+    ):
         epoch_loss = 0
         running_loss = 0
         for i, (x, y_hat) in enumerate(iter(dataloader)):
@@ -60,12 +62,14 @@ class SwinWRBase(nn.Module):
         data_shuffle=True,
         data_num_workers=0,
         batch_size=16,
-        from_precomputed_set=False
+        from_precomputed_set=False,
     ):
-        data_set = SwinPrecomputedSet(
-            data_set_type=DataSetType.Training, device=self._device
-        ) if from_precomputed_set else SwinPrecomputedSet(
-            data_set_type=DataSetType.Training, device=self._device
+        data_set = (
+            SwinPrecomputedSet(data_set_type=DataSetType.Training, device=self._device)
+            if from_precomputed_set
+            else SwinPrecomputedSet(
+                data_set_type=DataSetType.Training, device=self._device
+            )
         )
 
         print(len(data_set))
@@ -94,15 +98,12 @@ class SwinWRBase(nn.Module):
         while n_epochs < 0 or epoch < n_epochs:
             # train the model one epoch
             train_loss = self.train_epoch(
-                train_data_loader,
-                epoch,
-                from_precomputed_set=from_precomputed_set
+                train_data_loader, epoch, from_precomputed_set=from_precomputed_set
             )
 
             # test on the validation set
             val_loss = self.test(
-                validation_data_loader,
-                from_precomputed_set=from_precomputed_set
+                validation_data_loader, from_precomputed_set=from_precomputed_set
             )
 
             # print epoch summary
@@ -121,7 +122,7 @@ class SwinWRBase(nn.Module):
             # if validation loss hasn't improved in val_loss epochs, stop training
             if (
                 0 < val_stop <= len(val_losses)
-                and np.mean(val_losses[-val_stop + 1:]) > val_losses[-val_stop]
+                and np.mean(val_losses[-val_stop + 1 :]) > val_losses[-val_stop]
             ):
                 print(
                     f"Validation loss hasn't improved in {val_stop} epochs. "
@@ -186,8 +187,7 @@ class SwinWRBase(nn.Module):
             return np.mean(
                 [
                     self._lossfn(
-                        self.forward_last(x) if from_precomputed_set else self(x),
-                        y_hat
+                        self.forward_last(x) if from_precomputed_set else self(x), y_hat
                     ).item()
                     for x, y_hat in iter(testset)
                 ]

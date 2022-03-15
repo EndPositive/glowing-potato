@@ -34,7 +34,7 @@ class ChunkedWatermarkedSet(VisionDataset):
         split_size=(0.7, 0.1, 0.2),
         watermarked_dir=OUTPUT_DIR,
         original_dir=DATASET_DIR,
-        include_fn=False  # used for precomputing dataset features
+        include_fn=False,  # used for precomputing dataset features
     ) -> None:
         super().__init__(DATASET_DIR, transforms=transforms)
 
@@ -89,7 +89,8 @@ class ChunkedWatermarkedSet(VisionDataset):
             self.__get_original_path(self.data_set_names[index]).as_posix()
         ).to(device=self.device)
 
-        # Set new seed so that watermarked and original transforms both have the same randomness
+        # Set new seed so that watermarked and original
+        # transforms both have the same randomness
         seed = math.floor(random.random() * 100000)
         torch.manual_seed(seed)
         random.seed(seed)

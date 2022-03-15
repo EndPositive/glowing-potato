@@ -39,7 +39,7 @@ class SwinWR(SwinWRBase):
             mlp_ratio=2,
             upsampler="",
             resi_connection="1conv",
-            n_input_images=n_input_images
+            n_input_images=n_input_images,
         )
 
         if load_path is None:
@@ -75,10 +75,10 @@ class SwinWR(SwinWRBase):
         print(f"Running model on {self._device}")
 
     def precompute_dataset(
-            self,
-            batch_size=64,
-            output_x=preprocessing.INPUT_DIR_PRECOMPUTED,
-            output_y=preprocessing.OUTPUT_DIR_PRECOMPUTED
+        self,
+        batch_size=64,
+        output_x=preprocessing.INPUT_DIR_PRECOMPUTED,
+        output_y=preprocessing.OUTPUT_DIR_PRECOMPUTED,
     ):
         train_data_loader = DataLoader(
             ChunkedWatermarkedSet(
@@ -102,26 +102,27 @@ class SwinWR(SwinWRBase):
                 # write expected output data to file
                 np.save(
                     os.path.join(
-                        output_y,
-                        os.path.basename(fn_curr).split('.')[0] + '.npy'
-                    ), y
+                        output_y, os.path.basename(fn_curr).split(".")[0] + ".npy"
+                    ),
+                    y,
                 )
 
                 # write features to file
                 np.save(
                     os.path.join(
                         output_x,
-                        os.path.basename(fn_curr).split('.')[0] + f'_features.npy'
+                        os.path.basename(fn_curr).split(".")[0] + "_features.npy",
                     ),
-                    features_curr
+                    features_curr,
                 )
 
                 # write residual to file
                 np.save(
                     os.path.join(
                         output_x,
-                        os.path.basename(fn_curr).split('.')[0] + f'_residual.npy'
-                    ), residual_curr
+                        os.path.basename(fn_curr).split(".")[0] + "_residual.npy",
+                    ),
+                    residual_curr,
                 )
 
     def forward_last(self, x):
