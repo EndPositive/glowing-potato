@@ -11,6 +11,7 @@ from datasets.chunked_watermarked_set import ChunkedWatermarkedSet, DataSetType
 from models.swin_ir_multi import SwinIRMulti
 from models.swin_wr_base import SwinWRBase
 from swinir.models.network_swinir import SwinIR
+from datasets.transform import TRANSFORM_SWIN
 
 
 EMBED_DIM = 180
@@ -71,8 +72,10 @@ class SwinWR(SwinWRBase):
         self._lossfn = nn.L1Loss()
 
         # define device to run on
-        self._model.to(self._device)
-        print(f"Running model on {self._device}")
+        self._model.to(self.device)
+        print(f"Running model on {self.device}")
+
+        self._transforms = TRANSFORM_SWIN
 
     def precompute_dataset(
         self,
@@ -82,7 +85,7 @@ class SwinWR(SwinWRBase):
     ):
         train_data_loader = DataLoader(
             ChunkedWatermarkedSet(
-                data_set_type=DataSetType.Training, device=self._device, include_fn=True
+                data_set_type=DataSetType.Training, device=self.device, include_fn=True
             ),
             batch_size=batch_size,
             shuffle=False,
@@ -131,5 +134,6 @@ class SwinWR(SwinWRBase):
 
 if __name__ == "__main__":
     m = SwinWR()
-    m.train(from_precomputed_set=True, batch_size=1)
+    m.train(batch_size=1)
+    # m.train(from_precomputed_set=True, batch_size=1)
     # m.precompute_dataset(batch_size=10)

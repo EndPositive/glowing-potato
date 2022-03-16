@@ -1,16 +1,15 @@
 import gc
-import math
-import random
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, List, Union
 
 import numpy as np
 import torch
+import torchvision.transforms
 from torchvision.datasets import VisionDataset
 from torchvision.io import read_image
 
-from datasets.transform import TRANSFORM
+import datasets.transform
 from preprocessing import DATASET_DIR, OUTPUT_DIR
 
 
@@ -30,7 +29,7 @@ class ChunkedWatermarkedSet(VisionDataset):
         self,
         data_set_type: DataSetType,
         device: torch.device,
-        transforms: Callable = TRANSFORM,
+        transforms: Callable,
         split_size=(0.7, 0.1, 0.2),
         watermarked_dir=OUTPUT_DIR,
         original_dir=DATASET_DIR,
@@ -89,18 +88,8 @@ class ChunkedWatermarkedSet(VisionDataset):
             self.__get_original_path(self.data_set_names[index]).as_posix()
         ).to(device=self.device)
 
-        # Set new seed so that watermarked and original
-        # transforms both have the same randomness
-        seed = math.floor(random.random() * 100000)
-        torch.manual_seed(seed)
-        random.seed(seed)
-        np.random.seed(seed)
-        watermarked = self.transforms(watermarked)
-
-        torch.manual_seed(seed)
-        random.seed(seed)
-        np.random.seed(seed)
-        original = self.transforms(original)
+        # calculate transforms
+        watermarked, original = self.transforms(watermarked, original)
 
         if self.include_fn:
             return watermarked, original, self.data_set_names[index]
@@ -112,7 +101,10 @@ class ChunkedWatermarkedSet(VisionDataset):
 
 
 if __name__ == "__main__":
-    dataset = ChunkedWatermarkedSet(data_set_type=DataSetType.Training)
-    watermarked_test, original_test = dataset[0]
-    to_pil_image(watermarked_test).show()
-    to_pil_image(original_test).show()
+    watermarked_test, original_test = ChunkedWatermarkedSet(
+        data_set_type=DataSetType.Training,
+        device='cpu',
+        transforms=datasets.transform.TRANSFORM_UNET
+    )[0]
+    torchvision.transforms.ToPILImage()(watermarked_test).show()
+    torchvision.transforms.ToPILImage()(original_test).show()

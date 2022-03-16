@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from torch import nn
 from datasets.chunked_watermarked_set import DataSetType, ChunkedWatermarkedSet
 from datasets.swin_precomputed_set import SwinPrecomputedSet
+from typing import Callable
 
 from preprocessing import formatter as processing
 
@@ -17,10 +18,11 @@ class SwinWRBase(nn.Module):
     _lossfn: nn.Module
     _optimizer: Optimizer
     _model: nn.Module
+    _transforms: Callable
 
     def __init__(self, image_size=(128, 128)):
         super().__init__()
-        self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.image_size = image_size
 
     def train_epoch(
@@ -67,10 +69,10 @@ class SwinWRBase(nn.Module):
     ):
         if data_set is None:
             data_set = (
-                SwinPrecomputedSet(data_set_type=DataSetType.Training, device=self._device)
+                SwinPrecomputedSet(data_set_type=DataSetType.Training, device=self.device)
                 if from_precomputed_set
                 else ChunkedWatermarkedSet(
-                    data_set_type=DataSetType.Training, device=self._device
+                    data_set_type=DataSetType.Training, device=self.device, transforms=self._transforms
                 )
             )
 
