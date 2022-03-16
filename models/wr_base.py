@@ -15,7 +15,7 @@ from tqdm import tqdm
 from preprocessing import formatter as processing
 
 
-class SwinWRBase(nn.Module):
+class WRBase(nn.Module):
     _lossfn: nn.Module
     _optimizer: Optimizer
     _model: nn.Module

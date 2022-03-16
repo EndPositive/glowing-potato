@@ -9,7 +9,7 @@ from tqdm import tqdm
 import preprocessing
 from datasets.chunked_watermarked_set import ChunkedWatermarkedSet, DataSetType
 from models.swin_ir_multi import SwinIRMulti
-from models.swin_wr_base import SwinWRBase
+from models.wr_base import WRBase
 from swinir.models.network_swinir import SwinIR
 from datasets.transform import TRANSFORM_SWIN
 
@@ -17,7 +17,7 @@ from datasets.transform import TRANSFORM_SWIN
 EMBED_DIM = 180
 
 
-class SwinWR(SwinWRBase):
+class SwinWR(WRBase):
     def __init__(
         self,
         image_size=(128, 128),

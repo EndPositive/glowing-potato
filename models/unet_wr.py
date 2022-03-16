@@ -1,10 +1,10 @@
-from swin_wr_base import SwinWRBase
+from wr_base import WRBase
 from models.unet import UNet
 from torch import nn, optim
 from datasets.transform import TRANSFORM_UNET
 
 
-class UNetWR(SwinWRBase):
+class UNetWR(WRBase):
     def __init__(self, image_size=(572, 572)):
         super().__init__(image_size)
 
