@@ -10,6 +10,7 @@ from torch import nn
 from datasets.chunked_watermarked_set import DataSetType, ChunkedWatermarkedSet
 from datasets.swin_precomputed_set import SwinPrecomputedSet
 from typing import Callable
+from tqdm import tqdm
 
 from preprocessing import formatter as processing
 
@@ -49,7 +50,7 @@ class SwinWRBase(nn.Module):
                 if (i + 1) % log_every == 0:
                     print(
                         f"[{epoch + 1}, {i + 1:5d}] "
-                        "loss: {running_loss / log_every:.3f}"
+                        f"loss: {running_loss / log_every:.3f}"
                     )
                     running_loss = 0
 
