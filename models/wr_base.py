@@ -35,6 +35,8 @@ class WRBase(nn.Module):
             # zero the parameter gradients
             self._optimizer.zero_grad()
 
+            x, y_hat = x.to(self.device), y_hat.to(self.device)
+
             # forward + backward + optimize
             y = self.forward_last(x) if from_precomputed_set else self(x)
             loss = self._lossfn(y, y_hat)
