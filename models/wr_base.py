@@ -21,17 +21,17 @@ class WRBase(nn.Module):
     _model: nn.Module
     _transforms: Callable
 
-    def __init__(self, image_size=(128, 128)):
+    def __init__(self, input_size=(128, 128)):
         super().__init__()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.image_size = image_size
+        self.input_size = input_size
 
     def train_epoch(
         self, dataloader: DataLoader, epoch=0, log_every=-1, from_precomputed_set=False
     ):
         epoch_loss = 0
         running_loss = 0
-        for i, (x, y_hat) in enumerate(iter(dataloader)):
+        for i, (x, y_hat) in tqdm(enumerate(iter(dataloader)), total=len(dataloader)):
             # zero the parameter gradients
             self._optimizer.zero_grad()
 

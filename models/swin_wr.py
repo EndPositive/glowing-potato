@@ -20,13 +20,13 @@ EMBED_DIM = 180
 class SwinWR(WRBase):
     def __init__(
         self,
-        image_size=(128, 128),
+        input_size=(128, 128),
         inner_model: SwinIR = SwinIRMulti,
         train_last_layer_only=True,
         load_path=None,
         n_input_images=1,
     ):
-        super().__init__(image_size)
+        super().__init__(input_size)
 
         self._model = inner_model(
             upscale=1,
