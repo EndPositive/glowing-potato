@@ -188,7 +188,7 @@ class WRBase(nn.Module):
         torch.save(self._model.state_dict(), path)
 
     def load(self, path):
-        self._model.load_state_dict(torch.load(path))
+        self._model.load_state_dict(torch.load(path, map_location=self.device))
 
     def test(self, testset: DataLoader, from_precomputed_set=False):
         with torch.no_grad():
