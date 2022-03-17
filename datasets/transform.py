@@ -52,8 +52,8 @@ class CropMirrorTransform:
 
         # get random coordinates where to start crop
         _, hpy, wpy = padded_y.size()
-        top = np.random.randint(0, hpy - self.inner[0])
-        left = np.random.randint(0, wpy - self.inner[1])
+        top = np.random.randint(0, hpy - self.inner[0] + 1)
+        left = np.random.randint(0, wpy - self.inner[1] + 1)
 
         # crop outer for x, inner for y
         return TF.crop(
