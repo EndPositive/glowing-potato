@@ -2,6 +2,7 @@ from typing import List
 
 import numpy as np
 from PIL import Image
+import itertools
 
 from preprocessing import RESOURCES_DIR
 
@@ -58,6 +59,7 @@ class Asset:
                 np.random.randint(0, int(0.9 * other.height)),
                 np.random.randint(0, int(0.9 * other.width)),
             )
+        print(position)
 
         other.paste(modified, position, modified)
         return other
@@ -77,13 +79,25 @@ class AssetWatermarker:
     def __call__(
         self,
         image,
-        n_picks=7
+        grid_layout=None,
+        n_picks=8
     ) -> Image:
         if type(image) == str:
             image = Image.open(image)
 
-        for _ in range(n_picks):
-            image = np.random.choice(self.assets)(image)
+        if grid_layout is None:
+            for _ in range(n_picks):
+                image = np.random.choice(self.assets)(image)
+        else:
+            # get evenly spaced points on the image
+            w, h = image.size
+            w_space = w // grid_layout[0]
+            h_space = h // grid_layout[1]
+            w_coords = np.arange(0, w, w_space)
+            h_coords = np.arange(0, h, h_space)
+            points = itertools.product(w_coords, h_coords)
+            for p in points:
+                image = np.random.choice(self.assets)(image, position=p)
 
         return image
 
