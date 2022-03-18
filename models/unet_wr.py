@@ -24,7 +24,8 @@ class UNetWR(WRBase):
     def predict(self, img: Image, max_batch_size=8) -> Image:
         batch = self._transforms.get_prediction_batch(img)
         batches = torch.split(batch, max_batch_size)
-        pred = torch.cat([self(x) for x in tqdm(batches)], 0)
+        with torch.no_grad():
+            pred = torch.cat([self(x) for x in tqdm(batches)], 0)
         return self._transforms.image_from_prediction(pred, img)
 
     def show_sample(self):
