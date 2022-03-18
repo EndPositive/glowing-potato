@@ -191,13 +191,14 @@ class WRBase(nn.Module):
         self._model.load_state_dict(torch.load(path, map_location=self.device))
 
     def test(self, testset: DataLoader, from_precomputed_set=False):
+        self._model.to(self.device)
         with torch.no_grad():
             return np.mean(
                 [
                     self._lossfn(
                         self.forward_last(x) if from_precomputed_set else self(x), y_hat
                     ).item()
-                    for x, y_hat in iter(testset)
+                    for x, y_hat in tqdm(iter(testset))
                 ]
             )
 
