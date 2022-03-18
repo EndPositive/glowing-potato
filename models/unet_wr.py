@@ -5,6 +5,8 @@ from datasets.transform import CropMirrorTransform
 from datasets.chunked_watermarked_set import ChunkedWatermarkedSet, DataSetType
 from torch.utils.data import DataLoader
 from PIL import Image
+import torch
+from tqdm import tqdm
 
 
 class UNetWR(WRBase):
@@ -18,6 +20,12 @@ class UNetWR(WRBase):
             self._model.parameters(), lr=0.001, weight_decay=0.0001
         )
         self._transforms = CropMirrorTransform(input_size, output_size)
+
+    def predict(self, img: Image, max_batch_size=8) -> Image:
+        batch = self._transforms.get_prediction_batch(img)
+        batches = torch.split(batch, max_batch_size)
+        pred = torch.cat([self(x) for x in tqdm(batches)], 0)
+        return self._transforms.image_from_prediction(pred, img)
 
     def show_sample(self):
         loader = DataLoader(
@@ -41,5 +49,12 @@ if __name__ == '__main__':
         input_size=288,
         output_size=100,
     )
-    m.load('../ckpt_0.pth')
-    m.show_sample()
+    m.load('../ckpt_2.pth')
+    x = Image.open('../resources/edge/0a1aee5d7701ce5c.jpg')
+    # x.thumbnail((400, 400))
+    y = m.predict(
+        x, max_batch_size=1
+    )
+
+    x.show()
+    y.show()
