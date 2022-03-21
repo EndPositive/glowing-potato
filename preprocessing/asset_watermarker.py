@@ -91,7 +91,7 @@ class AssetWatermarker:
             for p in points:
                 image = np.random.choice(self.assets)(image, position=p)
 
-        return image
+        return image.convert('RGB')
 
 
 if __name__ == "__main__":
