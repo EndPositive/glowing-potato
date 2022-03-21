@@ -61,7 +61,8 @@ class SwinIRMulti(SwinIR):
         self.n_input_images = n_input_images
         self.conv_last = nn.Conv2d(embed_dim * n_input_images, num_out_ch, 3, 1, 1)
 
-    def forward(self, x):
+    def forward_feature_extraction(self, x):
+        print(len(x), type(x))
         # x has shape (batch_size * n_input_images, 3, H, W)
         H, W = x.shape[2:]
         batch_size = x.shape[0] // self.n_input_images
@@ -79,14 +80,16 @@ class SwinIRMulti(SwinIR):
         )
 
         # transform to (batch_size, n_input_images * embed_dim, H, W)
-        res = torch.reshape(
+        return torch.reshape(
             res, (batch_size, self.n_input_images * self.embed_dim, H, W)
-        )
+        ), x
 
-        # last conv
-        x = x + self.conv_last(res)
+    def forward_last(self, x, residual):
+        # our layer
+        x = residual + self.conv_last(x)
 
         # batch normalization
-        x = x / self.img_range + self.mean
+        return x / self.img_range + self.mean
 
-        return x
+    def forward(self, x):
+        return self.forward_last(*self.forward_feature_extraction(x))
