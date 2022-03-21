@@ -13,6 +13,8 @@ from preprocessing.watermarker import Watermarker
 
 logger = logging.getLogger(__name__)
 
+watermarker = ShutterstockWatermarker()
+
 
 def process_image(args: Tuple[Path, Path, bool]):
     image_path = args[0]
@@ -28,7 +30,7 @@ def process_image(args: Tuple[Path, Path, bool]):
     if error:
         print(error)
         return
-    watermarker = ShutterstockWatermarker()
+
     watermarker(image, grid_layout=(5, 4)).save(output_path)
 
 

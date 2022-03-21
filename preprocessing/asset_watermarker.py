@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 import numpy as np
@@ -16,19 +17,22 @@ class Asset:
         self.opacity_range = opacity_range
         self.relative_image_scale = relative_image_scale
 
-    def __call__(self, other: Image, angle=None, position=None) -> Image:
-        modified = self.original.copy()
-
         # opacity
-        new_alpha = (
-            np.random.rand() * (self.opacity_range[1] - self.opacity_range[0])
-            + self.opacity_range[0]
-        )
-        pixels = modified.load()
-        for x in range(modified.width):
-            for y in range(modified.height):
-                r, g, b, a = pixels[x, y]
-                pixels[x, y] = r, g, b, int(a * new_alpha)
+        new_alpha = np.arange(*opacity_range, 0.05)
+        import os
+        print(os.getpid())
+        self.opacity_variants = []
+        for alpha in new_alpha:
+            opacity_variant = self.original.copy()
+            pixels = opacity_variant.load()
+            for x in range(self.original.width):
+                for y in range(self.original.height):
+                    r, g, b, a = pixels[x, y]
+                    pixels[x, y] = r, g, b, int(a * alpha)
+            self.opacity_variants.append(opacity_variant)
+
+    def __call__(self, other: Image, angle=None, position=None) -> Image:
+        modified = np.random.choice(self.opacity_variants).copy()
 
         # relative_image_scale specifies how big we want the asset to be (on average)
         # compared to the image we paste it on; norm_scale controls the size to
@@ -40,8 +44,8 @@ class Asset:
         # we multiply norm_scale by another piece of randomness
         # (sample from a standard distribution)
         scale_factor = np.abs(np.random.normal(1.1, self.scale_std)) * norm_scale
-        nw = int(modified.width * scale_factor)
-        nh = int(modified.height * scale_factor)
+        nw = math.ceil(modified.width * scale_factor)
+        nh = math.ceil(modified.height * scale_factor)
         modified = modified.resize((nw, nh))
 
         # rotation
