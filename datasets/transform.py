@@ -1,5 +1,6 @@
 import torch
 import torchvision.transforms.functional as TF
+import torchvision.transforms as T
 import numpy as np
 from torch import Tensor
 from typing import Tuple
@@ -46,9 +47,6 @@ class CropMirrorTransform:
         # convert to tensor
         x = TF.to_tensor(x)
 
-        # normalize
-        x = torch.divide(x, 255)
-
         # pad
         inner, outer = self.get_padding(x)
         x_inner = torch.nn.ReflectionPad2d(inner)(x)
@@ -68,7 +66,6 @@ class CropMirrorTransform:
             TF.crop(x, top, left, self.outer[0], self.outer[1])
             for top, left in crops
         ]
-
         return torch.cat(inputs)
 
     def image_from_prediction(self, prediction: Tensor, original: Image) -> Image:
@@ -97,7 +94,7 @@ class CropMirrorTransform:
         # crop to remove padding
         prediction = TF.crop(prediction, inner[2], inner[0], original.size()[1], original.size()[2])
 
-        return TF.to_pil_image(prediction)
+        return T.ToPILImage()(prediction)
 
     def __call__(self, x: Tensor, y: Tensor, norm=True) -> Tuple[Tensor, Tensor]:
         # check sizes match
