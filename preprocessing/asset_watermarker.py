@@ -57,7 +57,6 @@ class Asset:
                 np.random.randint(0, int(0.9 * other.height)),
                 np.random.randint(0, int(0.9 * other.width)),
             )
-        print(position)
 
         other.paste(modified, position, modified)
         return other
