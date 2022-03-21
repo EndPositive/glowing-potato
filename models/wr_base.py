@@ -29,6 +29,7 @@ class WRBase(nn.Module):
     def train_epoch(
         self, dataloader: DataLoader, epoch=0, log_every=-1, from_precomputed_set=False
     ):
+        self.train()
         epoch_loss = 0
         running_loss = 0
         for i, (x, y_hat) in tqdm(enumerate(iter(dataloader)), total=len(dataloader)):
@@ -58,7 +59,13 @@ class WRBase(nn.Module):
 
         return epoch_loss / len(dataloader)
 
-    def train(
+    def train(self, mode: bool = True):
+        self._model.train(mode)
+
+    def eval(self):
+        self._model.eval()
+
+    def train_model(
         self,
         n_epochs=-1,
         val_stop=5,
@@ -110,9 +117,10 @@ class WRBase(nn.Module):
             )
 
             # test on the validation set
-            val_loss = self.test(
-                validation_data_loader, from_precomputed_set=from_precomputed_set
-            )
+            # val_loss = self.test(
+            #     validation_data_loader, from_precomputed_set=from_precomputed_set
+            # )
+            val_loss = 0
 
             # print epoch summary
             print(f"Epoch {epoch} summary:")
@@ -192,6 +200,7 @@ class WRBase(nn.Module):
 
     def test(self, testset: DataLoader, from_precomputed_set=False):
         self._model.to(self.device)
+        self.eval()
         with torch.no_grad():
             return np.mean(
                 [

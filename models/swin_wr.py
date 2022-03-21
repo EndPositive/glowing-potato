@@ -134,6 +134,6 @@ class SwinWR(WRBase):
 
 if __name__ == "__main__":
     m = SwinWR()
-    m.train(batch_size=1)
+    m.train_model(batch_size=1)
     # m.train(from_precomputed_set=True, batch_size=1)
     # m.precompute_dataset(batch_size=10)

@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from PIL import Image
 import torch
 from tqdm import tqdm
+from preprocessing import DATASET_DIR, OUTPUT_DIR
 
 
 class UNetWR(WRBase):
@@ -15,13 +16,14 @@ class UNetWR(WRBase):
 
         self.output_size = output_size
         self._model = UNet(n_channels=3, n_classes=3)
-        self._lossfn = nn.L1Loss()
+        self._lossfn = nn.MSELoss()
         self._optimizer = optim.Adam(
-            self._model.parameters(), lr=0.001, weight_decay=0.0001
+            self._model.parameters()#, lr=0.001, weight_decay=0.0001
         )
         self._transforms = CropMirrorTransform(input_size, output_size)
 
     def predict(self, img: Image, max_batch_size=8) -> Image:
+        self.eval()
         batch = self._transforms.get_prediction_batch(img)
         batches = torch.split(batch, max_batch_size)
         with torch.no_grad():
@@ -29,6 +31,7 @@ class UNetWR(WRBase):
         return self._transforms.image_from_prediction(pred, img)
 
     def show_sample(self):
+        self.eval()
         loader = DataLoader(
             ChunkedWatermarkedSet(
                 data_set_type=DataSetType.Test, device=self.device, transforms=self._transforms
@@ -46,16 +49,34 @@ class UNetWR(WRBase):
 
 
 if __name__ == '__main__':
+    i, o = 288, 100
+
     m = UNetWR(
-        input_size=288,
-        output_size=100,
-    )
-    m.load('../ckpt_2.pth')
-    x = Image.open('../resources/edge/0a1aee5d7701ce5c.jpg')
-    # x.thumbnail((400, 400))
-    y = m.predict(
-        x, max_batch_size=1
+        input_size=i,
+        output_size=o,
     )
 
+    m.load('../ckpt_2.pth')
+
+    m.train_model(
+        n_epochs=1,
+        batch_size=4,
+        save_every=1,
+        save_path='reprod_input_weights',
+        data_set=ChunkedWatermarkedSet(
+            data_set_type=DataSetType.Training,
+            split_size=(0.05, 0.7, 1-0.05-0.7),
+            device=m.device,
+            transforms=CropMirrorTransform(i, o),
+            watermarked_dir=DATASET_DIR,
+            # watermarked_dir=OUTPUT_DIR,
+            original_dir=DATASET_DIR
+        )
+    )
+
+    x = Image.open('../resources/edge/0c3ee986fa326b1a.jpg')
+    y = m.predict(
+        x, max_batch_size=8
+    )
     x.show()
     y.show()
