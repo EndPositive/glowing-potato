@@ -18,7 +18,6 @@ class Asset:
 
     def __call__(self, other: Image, angle=None, position=None) -> Image:
         modified = self.original.copy()
-        other = other.convert("RGBA")
 
         # opacity
         new_alpha = (
@@ -43,7 +42,7 @@ class Asset:
         scale_factor = np.abs(np.random.normal(1.1, self.scale_std)) * norm_scale
         nw = int(modified.width * scale_factor)
         nh = int(modified.height * scale_factor)
-        modified.thumbnail((nw, nh))
+        modified = modified.resize((nw, nh))
 
         # rotation
         if angle is None:

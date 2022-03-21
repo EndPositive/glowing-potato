@@ -16,7 +16,7 @@ class ShutterstockWatermarker(AssetWatermarker):
             Asset(get_f('logo.png')),
             Asset(get_f('logo-fill.png')),
             Asset(get_f('logo-black.png')),
-            Asset(get_f('sh-outline.png'), relative_image_scale=0.4),
+            Asset(get_f('sh-outline.png'), relative_image_scale=0.3),
             Asset(get_f('logo-corners.png'))
         ]
 
