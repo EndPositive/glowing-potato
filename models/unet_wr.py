@@ -16,7 +16,9 @@ class UNetWR(WRBase):
 
         self.output_size = output_size
         self._model = UNet(n_channels=3, n_classes=3)
-        self._lossfn = nn.MSELoss()
+        self._model.to(self.device)
+        print(f"Running model on {self.device}")
+        self._lossfn = nn.L1Loss()
         self._optimizer = optim.Adam(self._model.parameters())
         self._transforms = CropMirrorTransform(input_size, output_size)
 
@@ -25,7 +27,7 @@ class UNetWR(WRBase):
         batch = self._transforms.get_prediction_batch(img)
         batches = torch.split(batch, max_batch_size)
         with torch.no_grad():
-            pred = torch.cat([self(x) for x in tqdm(batches)], 0)
+            pred = torch.cat([self(x.to(self.device)) for x in tqdm(batches)], 0)
         return self._transforms.image_from_prediction(pred, img)
 
     def show_sample(self):

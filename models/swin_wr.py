@@ -42,6 +42,8 @@ class SwinWR(WRBase):
             resi_connection="1conv",
             n_input_images=n_input_images,
         )
+        self._model.to(self.device)
+        print(f"Running model on {self.device}")
 
         if load_path is None:
             # download pretrained model
@@ -70,10 +72,6 @@ class SwinWR(WRBase):
             self._model.parameters(), lr=0.001, weight_decay=0.0001
         )
         self._lossfn = nn.L1Loss()
-
-        # define device to run on
-        self._model.to(self.device)
-        print(f"Running model on {self.device}")
 
         self._transforms = TRANSFORM_SWIN
 

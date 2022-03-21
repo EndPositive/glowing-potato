@@ -77,9 +77,6 @@ class WRBase(nn.Module):
         from_precomputed_set=False,
         data_set=None
     ):
-        # run model on correct device
-        self._model.to(self.device)
-
         if data_set is None:
             data_set = (
                 SwinPrecomputedSet(data_set_type=DataSetType.Training, device=self.device)
@@ -199,7 +196,6 @@ class WRBase(nn.Module):
         self._model.load_state_dict(torch.load(path, map_location=self.device))
 
     def test(self, testset: DataLoader, from_precomputed_set=False):
-        self._model.to(self.device)
         self.eval()
         with torch.no_grad():
             return np.mean(
