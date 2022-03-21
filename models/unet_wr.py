@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from PIL import Image
 import torch
 from tqdm import tqdm
-from preprocessing import DATASET_DIR, OUTPUT_DIR
+from preprocessing import DATASET_DIR
 
 
 class UNetWR(WRBase):
@@ -17,9 +17,7 @@ class UNetWR(WRBase):
         self.output_size = output_size
         self._model = UNet(n_channels=3, n_classes=3)
         self._lossfn = nn.MSELoss()
-        self._optimizer = optim.Adam(
-            self._model.parameters()#, lr=0.001, weight_decay=0.0001
-        )
+        self._optimizer = optim.Adam(self._model.parameters())
         self._transforms = CropMirrorTransform(input_size, output_size)
 
     def predict(self, img: Image, max_batch_size=8) -> Image:
@@ -34,7 +32,9 @@ class UNetWR(WRBase):
         self.eval()
         loader = DataLoader(
             ChunkedWatermarkedSet(
-                data_set_type=DataSetType.Test, device=self.device, transforms=self._transforms
+                data_set_type=DataSetType.Test,
+                device=self.device,
+                transforms=self._transforms,
             ),
             batch_size=1,
             shuffle=False,
@@ -48,7 +48,7 @@ class UNetWR(WRBase):
             break
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     i, o = 288, 100
 
     m = UNetWR(
@@ -56,27 +56,25 @@ if __name__ == '__main__':
         output_size=o,
     )
 
-    m.load('../ckpt_2.pth')
+    m.load("../ckpt_2.pth")
 
     m.train_model(
         n_epochs=1,
         batch_size=4,
         save_every=1,
-        save_path='reprod_input_weights',
+        save_path="reprod_input_weights",
         data_set=ChunkedWatermarkedSet(
             data_set_type=DataSetType.Training,
-            split_size=(0.05, 0.7, 1-0.05-0.7),
+            split_size=(0.05, 0.7, 1 - 0.05 - 0.7),
             device=m.device,
             transforms=CropMirrorTransform(i, o),
             watermarked_dir=DATASET_DIR,
             # watermarked_dir=OUTPUT_DIR,
-            original_dir=DATASET_DIR
-        )
+            original_dir=DATASET_DIR,
+        ),
     )
 
-    x = Image.open('../resources/edge/0c3ee986fa326b1a.jpg')
-    y = m.predict(
-        x, max_batch_size=8
-    )
+    x = Image.open("../resources/edge/0c3ee986fa326b1a.jpg")
+    y = m.predict(x, max_batch_size=8)
     x.show()
     y.show()
