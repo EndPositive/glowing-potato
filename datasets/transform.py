@@ -94,6 +94,8 @@ class CropMirrorTransform:
         # crop to remove padding
         prediction = TF.crop(prediction, inner[2], inner[0], original.size()[1], original.size()[2])
 
+        prediction = torch.clamp(prediction, 0, 1)
+
         return T.ToPILImage()(prediction)
 
     def __call__(self, x: Tensor, y: Tensor, norm=True) -> Tuple[Tensor, Tensor]:
