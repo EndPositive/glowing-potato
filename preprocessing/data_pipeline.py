@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from preprocessing import EDGE_DIR, OUTPUT_DIR
 from preprocessing.custom_pool import CustomPool
+from preprocessing.shutterstock_watermarker import ShutterstockWatermarker
 from preprocessing.watermarker import Watermarker
 
 logger = logging.getLogger(__name__)
@@ -18,16 +19,17 @@ def process_image(args: Tuple[Path, Path, bool]):
     output_dir = args[1]
     overwrite = args[2]
 
-    if output_dir.joinpath(image_path.name).exists and not overwrite:
+    output_path = output_dir.joinpath(image_path.name)
+
+    if output_path.exists and not overwrite:
         return
 
-    try:
-        watermarker = Watermarker(image_path)
-    except ValueError:
+    image, error = Watermarker.load_image(image_path)
+    if error:
+        print(error)
         return
-
-    watermarker.add_default()
-    watermarker.save(output_dir)
+    watermarker = ShutterstockWatermarker()
+    watermarker(image, grid_layout=(5, 4)).save(output_path)
 
 
 def process_default_pool(

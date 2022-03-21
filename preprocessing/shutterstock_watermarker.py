@@ -1,7 +1,7 @@
-from asset_watermarker import AssetWatermarker, Asset
 from typing import List
 from PIL import Image
 from preprocessing import RESOURCES_DIR
+from preprocessing.asset_watermarker import AssetWatermarker, Asset
 
 
 class ShutterstockWatermarker(AssetWatermarker):
