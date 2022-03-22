@@ -75,6 +75,7 @@ class WRBase(nn.Module):
         data_num_workers=0,
         batch_size=16,
         from_precomputed_set=False,
+        validate=False,
         data_set=None
     ):
         if data_set is None:
@@ -88,14 +89,14 @@ class WRBase(nn.Module):
 
         # load train and validation sets
         train_data_loader = DataLoader(
-            data_set,
+            data_set.train(),
             batch_size=batch_size,
             shuffle=data_shuffle,
             num_workers=data_num_workers,
         )
 
         validation_data_loader = DataLoader(
-            data_set,
+            data_set.validate(),
             batch_size=batch_size,
             shuffle=data_shuffle,
             num_workers=data_num_workers,
@@ -114,10 +115,9 @@ class WRBase(nn.Module):
             )
 
             # test on the validation set
-            # val_loss = self.test(
-            #     validation_data_loader, from_precomputed_set=from_precomputed_set
-            # )
-            val_loss = 0
+            val_loss = self.test(
+                validation_data_loader, from_precomputed_set=from_precomputed_set
+            ) if validate else None
 
             # print epoch summary
             print(f"Epoch {epoch} summary:")
@@ -134,7 +134,7 @@ class WRBase(nn.Module):
 
             # if validation loss hasn't improved in val_loss epochs, stop training
             if (
-                0 < val_stop <= len(val_losses)
+                validate and 0 < val_stop <= len(val_losses)
                 and np.mean(val_losses[-val_stop + 1 :]) > val_losses[-val_stop]
             ):
                 print(
@@ -206,6 +206,48 @@ class WRBase(nn.Module):
                     for x, y_hat in tqdm(iter(testset))
                 ]
             )
+
+    def validate_from_checkpoints(self, path, data_set=None, max_batch_size=16):
+        if data_set is None:
+            data_set = ChunkedWatermarkedSet(
+                device=self.device,
+                transforms=self._transforms,
+                split_size=(0.9, 0.001,)
+            ).validate()
+
+        data_loader = DataLoader(
+            data_set,
+            batch_size=max_batch_size,
+            shuffle=False,
+            num_workers=0,
+        )
+
+        ckpt_dir = Path(path)
+        ckpt_files = list(ckpt_dir.glob("ckpt_*.pth"))
+
+        print(f'Found {len(ckpt_files)} model files.')
+
+        losses = {}
+        for i, ckpt_path in enumerate(ckpt_files):
+            # get epoch number
+            epoch = int(ckpt_path.name[5:].split('.')[0])
+
+            # load the model
+            self.load(ckpt_path.as_posix())
+
+            # get loss
+            loss = self.test(data_loader)
+
+            # save loss into dictionary
+            losses[epoch] = loss
+
+            print(
+                f'Finished validating epoch {epoch}. ({i + 1} / {len(ckpt_files)})\n'
+                f'Loss: {loss}\n'
+                f'-----------------------------------------------------------------\n'
+            )
+
+        return list(losses.keys()), list(losses.values())
 
     def forward(self, x):
         return self._model(x)
