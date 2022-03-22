@@ -2,6 +2,7 @@ import gc
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, List, Union
+from copy import deepcopy
 
 import numpy as np
 import torch
@@ -27,9 +28,9 @@ class ChunkedWatermarkedSet(VisionDataset):
 
     def __init__(
         self,
-        data_set_type: DataSetType,
         device: torch.device,
         transforms: Callable,
+        data_set_type: DataSetType = DataSetType.Training,
         split_size=(0.7, 0.1, 0.2),
         watermarked_dir=OUTPUT_DIR,
         original_dir=DATASET_DIR,
@@ -42,6 +43,13 @@ class ChunkedWatermarkedSet(VisionDataset):
 
         self.device = device
 
+        if len(split_size) == 2:
+            split_size = (
+                split_size[0],
+                split_size[1],
+                1 - split_size[0] - split_size[1]
+            )
+
         if (split_sum := sum(split_size)) != 1:
             raise ValueError(f"Split size should sum to 1 {split_size} -> {split_sum}")
 
@@ -52,7 +60,7 @@ class ChunkedWatermarkedSet(VisionDataset):
             if DATASET_DIR.joinpath(jpg_in_watermarked_dataset.name).exists
         ]
 
-        training_set, validation_set, testing_set = np.split(
+        self.training_set, self.validation_set, self.testing_set = np.split(
             data_set_paths,
             [
                 int(len(data_set_paths) * split_size[0]),
@@ -60,18 +68,31 @@ class ChunkedWatermarkedSet(VisionDataset):
             ],
         )
 
-        if data_set_type == DataSetType.Training:
-            self.data_set_names = training_set
-        elif data_set_type == DataSetType.Validation:
-            self.data_set_names = validation_set
+        if data_set_type == DataSetType.Validation:
+            self.data_set_names = self.validation_set
         elif data_set_type == DataSetType.Test:
-            self.data_set_names = testing_set
+            self.data_set_names = self.testing_set
         else:
-            raise ValueError(f"Unknown data set type {data_set_type}")
+            self.data_set_names = self.training_set
 
         self.include_fn = include_fn
 
         gc.collect()
+
+    def train(self):
+        other = deepcopy(self)
+        other.data_set_names = other.training_set
+        return other
+
+    def validate(self):
+        other = deepcopy(self)
+        other.data_set_names = other.validation_set
+        return other
+
+    def test(self):
+        other = deepcopy(self)
+        other.data_set_names = other.testing_set
+        return other
 
     def __get_watermarked_path(self, name):
         return self.watermarked_dir.joinpath(name)
