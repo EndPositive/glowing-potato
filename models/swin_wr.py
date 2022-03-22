@@ -31,7 +31,7 @@ class SwinWR(WRBase):
         self._model = inner_model(
             upscale=1,
             in_chans=3,
-            img_size=self.image_size[0],
+            img_size=self.input_size[0],
             window_size=8,
             img_range=1.0,
             depths=[6, 6, 6, 6, 6, 6],
