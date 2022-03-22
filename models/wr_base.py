@@ -94,12 +94,12 @@ class WRBase(nn.Module):
             num_workers=data_num_workers,
         )
 
-        validation_data_loader = DataLoader(
-            data_set,
-            batch_size=batch_size,
-            shuffle=data_shuffle,
-            num_workers=data_num_workers,
-        )
+        # validation_data_loader = DataLoader(
+        #     data_set,
+        #     batch_size=batch_size,
+        #     shuffle=data_shuffle,
+        #     num_workers=data_num_workers,
+        # )
 
         # make sure save path exists
         os.makedirs(save_path, exist_ok=True)
@@ -109,9 +109,12 @@ class WRBase(nn.Module):
         val_losses = []
         while n_epochs < 0 or epoch < n_epochs:
             # train the model one epoch
-            train_loss = self.train_epoch(
-                train_data_loader, epoch, from_precomputed_set=from_precomputed_set
-            )
+            try:
+                train_loss = self.train_epoch(
+                    train_data_loader, epoch, from_precomputed_set=from_precomputed_set
+                )
+            except KeyboardInterrupt:
+                break
 
             # test on the validation set
             # val_loss = self.test(
@@ -133,15 +136,15 @@ class WRBase(nn.Module):
                 self.save(os.path.join(save_path, f"ckpt_{epoch}.pth"))
 
             # if validation loss hasn't improved in val_loss epochs, stop training
-            if (
-                0 < val_stop <= len(val_losses)
-                and np.mean(val_losses[-val_stop + 1 :]) > val_losses[-val_stop]
-            ):
-                print(
-                    f"Validation loss hasn't improved in {val_stop} epochs. "
-                    "Stopping training..."
-                )
-                break
+            # if (
+            #     0 < val_stop <= len(val_losses)
+            #     and np.mean(val_losses[-val_stop + 1 :]) > val_losses[-val_stop]
+            # ):
+            #     print(
+            #         f"Validation loss hasn't improved in {val_stop} epochs. "
+            #         "Stopping training..."
+            #     )
+            #     break
 
             epoch += 1
 

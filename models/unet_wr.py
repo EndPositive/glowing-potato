@@ -1,3 +1,8 @@
+import sys, os, threading
+from pathlib import Path
+
+sys.path.append(Path(__file__).parents[1].absolute().as_posix())
+
 from wr_base import WRBase
 from models.unet import UNet
 from torch import nn, optim
@@ -7,7 +12,8 @@ from torch.utils.data import DataLoader
 from PIL import Image
 import torch
 from tqdm import tqdm
-from preprocessing import DATASET_DIR
+from IPython.display import display
+from preprocessing import DATASET_DIR, OUTPUT_DIR
 
 
 class UNetWR(WRBase):
@@ -18,7 +24,7 @@ class UNetWR(WRBase):
         self._model = UNet(n_channels=3, n_classes=3)
         self._model.to(self.device)
         print(f"Running model on {self.device}")
-        self._lossfn = nn.L1Loss()
+        self._lossfn = nn.MSELoss()
         self._optimizer = optim.Adam(self._model.parameters())
         self._transforms = CropMirrorTransform(input_size, output_size)
 
@@ -50,6 +56,10 @@ class UNetWR(WRBase):
             break
 
 
+def newest(p): # gets latest modified file
+    paths = [os.path.join(p, b) for b in os.listdir(p)]
+    return max(paths, key=os.path.getmtime)
+
 if __name__ == "__main__":
     i, o = 288, 100
 
@@ -58,25 +68,32 @@ if __name__ == "__main__":
         output_size=o,
     )
 
-    m.load("../ckpt_2.pth")
+    train = sys.argv[-1] == "train"
 
-    m.train_model(
-        n_epochs=1,
-        batch_size=4,
-        save_every=1,
-        save_path="reprod_input_weights",
-        data_set=ChunkedWatermarkedSet(
-            data_set_type=DataSetType.Training,
-            split_size=(0.05, 0.7, 1 - 0.05 - 0.7),
-            device=m.device,
-            transforms=CropMirrorTransform(i, o),
-            watermarked_dir=DATASET_DIR,
-            # watermarked_dir=OUTPUT_DIR,
-            original_dir=DATASET_DIR,
-        ),
-    )
+    model_to_load = "ckpt/final.pth"
+    model_to_load = newest("ckpt")
 
-    x = Image.open("../resources/edge/0c3ee986fa326b1a.jpg")
-    y = m.predict(x, max_batch_size=8)
-    x.show()
-    y.show()
+    m.load(model_to_load)
+
+    if train:
+        m.train_model(
+            n_epochs=50,
+            batch_size=16,
+            save_every=1,
+            save_path="ckpt",
+            data_set=ChunkedWatermarkedSet(
+                data_set_type=DataSetType.Training,
+                device=m.device,
+                transforms=CropMirrorTransform(i, o),
+                # watermarked_dir=DATASET_DIR,
+                watermarked_dir=OUTPUT_DIR,
+                original_dir=DATASET_DIR,
+            ),
+        )
+    else:
+        print("Using model: " + model_to_load.split("\\")[-1])
+        x = Image.open("resources/out/0aacbdb54e853a0a.jpg")
+        # x = Image.open("resources/real/stock.jpg")
+        y = m.predict(x, max_batch_size=8)
+        threading.Thread(target=x.show).start()
+        threading.Thread(target=y.show).start()

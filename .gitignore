@@ -6,3 +6,5 @@ download.py
 resources/datasets/open-images-v6/info.json
 .gitignore
 .gitignore
+ckpt
+trained
