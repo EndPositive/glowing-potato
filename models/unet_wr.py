@@ -28,14 +28,6 @@ class UNetWR(WRBase):
         self._optimizer = optim.Adam(self._model.parameters())
         self._transforms = CropMirrorTransform(input_size, output_size)
 
-    def predict(self, img: Image, max_batch_size=8) -> Image:
-        self.eval()
-        batch = self._transforms.get_prediction_batch(img)
-        batches = torch.split(batch, max_batch_size)
-        with torch.no_grad():
-            pred = torch.cat([self(x.to(self.device)) for x in tqdm(batches)], 0)
-        return self._transforms.image_from_prediction(pred, img)
-
     def show_sample(self):
         self.eval()
         loader = DataLoader(
