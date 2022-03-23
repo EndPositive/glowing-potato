@@ -22,14 +22,6 @@ class UNetWR(WRBase):
         self._optimizer = optim.Adam(self._model.parameters())
         self._transforms = CropMirrorTransform(input_size, output_size)
 
-    def predict(self, img: Image, max_batch_size=8) -> Image:
-        self.eval()
-        batch = self._transforms.get_prediction_batch(img)
-        batches = torch.split(batch, max_batch_size)
-        with torch.no_grad():
-            pred = torch.cat([self(x.to(self.device)) for x in tqdm(batches)], 0)
-        return self._transforms.image_from_prediction(pred, img)
-
     def show_sample(self):
         self.eval()
         loader = DataLoader(
@@ -58,10 +50,10 @@ if __name__ == "__main__":
         output_size=o,
     )
 
-    m.load("../ckpt_2.pth")
+    m.load("stck/ckpt_2.pth")
 
     m.train_model(
-        n_epochs=1,
+        n_epochs=0,
         batch_size=4,
         save_every=1,
         save_path="reprod_input_weights",
@@ -76,7 +68,8 @@ if __name__ == "__main__":
         ),
     )
 
-    x = Image.open("../resources/edge/0c3ee986fa326b1a.jpg")
+    x = Image.open('../../../Downloads/stock-photo-young-african-businesswoman-wearing-glasses-and-laughing-while-standing-alone-in-a-modern-office-1043390350.jpg')
+    # x = Image.open("../resources/out/0c3ee986fa326b1a.jpg")
     y = m.predict(x, max_batch_size=8)
     x.show()
     y.show()

@@ -159,35 +159,13 @@ class WRBase(nn.Module):
         x = np.transpose(x, (0, 3, 1, 2)) / 255  # convert to channels first
         return torch.from_numpy(x).float().to("cpu")
 
-    def predict(self, img):
-        if isinstance(img, str) or isinstance(img, Path):
-            img = Image.open(img)
-            img = np.asarray(img)
-
-        # shape should be image or batch of images
-        assert len(np.shape(img)) == 3 or len(np.shape(img)) == 4
-
-        # predict multiple images
-        if len(np.shape(img)) == 4:
-            return [self.predict(x) for x in img]
-
-        # pad to align to img size
-        padded, padding = processing.pad(img, self.image_size, return_padding=True)
-
-        # split image in multiple blocks, if too big
-        split = processing.split_image(padded, self.image_size)
-
-        # normalize and get input in tensor form
-        encoded_input = self._encode_input(split)
-
-        # run the network and decode the output (get numpy from tensor and un-normalize)
-        output = self._decode_output(self.forward_pass(encoded_input))
-
-        # piece image back together
-        unsplit = processing.unsplit_image(output, padded.shape[0])
-
-        # unpad and return
-        return processing.unpad(unsplit, padding)
+    def predict(self, img: Image, max_batch_size=8) -> Image:
+        self.eval()
+        batch = self._transforms.get_prediction_batch(img)
+        batches = torch.split(batch, max_batch_size)
+        with torch.no_grad():
+            pred = torch.cat([self(x.to(self.device)) for x in tqdm(batches)], 0)
+        return self._transforms.image_from_prediction(pred, img)
 
     def save(self, path):
         torch.save(self._model.state_dict(), path)
