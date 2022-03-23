@@ -1,5 +1,7 @@
-import os
+import os,sys
+from pathlib import Path
 
+sys.path.append(Path(__file__).parents[1].absolute().as_posix())
 import numpy as np
 import torch
 from torch import nn, optim
@@ -133,7 +135,8 @@ class SwinWR(WRBase):
 if __name__ == "__main__":
     m = SwinWR()
     from PIL import Image
-    m.predict(Image.open('../../../Downloads/WhatsApp Image 2022-03-16 at 8.43.40 PM.jpeg')).show()
+    m.load("ckpt/final.pth")
+    m.predict(Image.open('resources/out/0aacbdb54e853a0a.jpg')).show()
     # m.train_model(batch_size=1)
     # m.train(from_precomputed_set=True, batch_size=1)
     # m.precompute_dataset(batch_size=10)

@@ -8,3 +8,6 @@ resources/datasets/open-images-v6/info.json
 .gitignore
 ckpt
 trained
+mycreds.txt
+client_secrets.json
+upload.py
