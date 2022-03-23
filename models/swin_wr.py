@@ -45,6 +45,8 @@ class SwinWR(WRBase):
         self._model.to(self.device)
         print(f"Running model on {self.device}")
 
+        self.train_last_layer_only = train_last_layer_only
+
         if load_path is None:
             # download pretrained model
             state_dict = torch.utils.model_zoo.load_url(
@@ -57,15 +59,9 @@ class SwinWR(WRBase):
             del state_dict["conv_last.bias"]
 
             self._model.load_state_dict(state_dict, strict=False)
+            self.set_trainable()
         else:
             self.load(load_path)
-
-        if train_last_layer_only:
-            for param in self._model.parameters():
-                param.requires_grad = False
-
-            self._model.conv_last.weight.requires_grad = True
-            self._model.conv_last.bias.requires_grad = True
 
         # define optimizer and loss func
         self._optimizer = optim.Adam(
@@ -74,6 +70,18 @@ class SwinWR(WRBase):
         self._lossfn = nn.L1Loss()
 
         self._transforms = TRANSFORM_SWIN
+
+    def load(self, path):
+        super().load(path)
+        self.set_trainable()
+
+    def set_trainable(self):
+        if self.train_last_layer_only:
+            for param in self._model.parameters():
+                param.requires_grad = False
+
+            self._model.conv_last.weight.requires_grad = True
+            self._model.conv_last.bias.requires_grad = True
 
     def precompute_dataset(
         self,
