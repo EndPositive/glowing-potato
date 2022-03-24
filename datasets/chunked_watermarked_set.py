@@ -77,7 +77,7 @@ class ChunkedWatermarkedSet(VisionDataset):
 
         self.include_fn = include_fn
         self.preloaded_data = {}
-        self.preload_buffer = 20
+        self.preload_buffer = 15
         gc.collect()
 
     def train(self):
@@ -102,30 +102,33 @@ class ChunkedWatermarkedSet(VisionDataset):
         return self.original_dir.joinpath(name)
 
     def __load_images(self, index):
-        watermarked = read_image(
-            self.__get_watermarked_path(self.data_set_names[index]).as_posix()
-        ).to(device=self.device)
-        original = read_image(
-            self.__get_original_path(self.data_set_names[index]).as_posix()
-        ).to(device=self.device)
-        return self.transforms(watermarked, original)
+        try:
+            watermarked = read_image(
+                self.__get_watermarked_path(self.data_set_names[index]).as_posix()
+            ).to(device=self.device)
+            original = read_image(
+                self.__get_original_path(self.data_set_names[index]).as_posix()
+            ).to(device=self.device)
+            return self.transforms(watermarked, original)
+        except IndexError: pass
 
     def __preload(self, start_index, add=True):
         if start_index in self.preloaded_data: del self.preloaded_data[start_index]
         index = start_index+self.preload_buffer-1 if add else start_index
         self.preloaded_data[index] = None
         self.preloaded_data[index] = self.__load_images(index)
-
+        if [x for x in self.preloaded_data if x < start_index]:
+            print([x for x in self.preloaded_data if x < start_index])
 
     def __getitem__(self, index: int) -> Union[tuple[Any, Any, Path], tuple[Any, Any]]:
         # Read watermarked and original images as Tensors
         if index in self.preloaded_data: 
             time_waited = 0
             while (data := self.preloaded_data[index]) is None: 
-                print("\rwaiting", end="")
+                print("\r$", end="")
                 time_waited += 0.001
                 if time_waited > 3: 
-                    print(f'\nExceeded waiting times')
+                    print(f'\nExceeded waiting times - {list(self.preloaded_data)}')
                     del self.preloaded_data[index]
                     data = self.__load_images(index)
                     print(data)

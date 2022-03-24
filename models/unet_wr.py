@@ -87,6 +87,7 @@ if __name__ == "__main__":
         print("Using model: " + model_to_load.split("\\")[-1])
         x = Image.open("resources/out/0a1aee5d7701ce5c.jpg")
         # x = Image.open("resources/real/123rf.webp")
+        x = Image.open("resources/real/old2.jpg")
         # x = Image.open("resources/real/123rf_3.webp")
         y = m.predict(x, max_batch_size=8)
         threading.Thread(target=x.show).start()

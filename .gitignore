@@ -1,9 +1,12 @@
 .idea
 out
-resources
 __pycache__
 download.py
-resources/datasets/open-images-v6/info.json
+resources/dataset
+resources/test_dataset
+resources/edge
+resources/out
+resources/out2
 .gitignore
 .gitignore
 ckpt
