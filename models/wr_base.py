@@ -11,6 +11,7 @@ from datasets.chunked_watermarked_set import DataSetType, ChunkedWatermarkedSet
 from datasets.swin_precomputed_set import SwinPrecomputedSet
 from typing import Callable
 from tqdm import tqdm
+from torchsummary import summary
 
 from preprocessing import formatter as processing
 
@@ -24,7 +25,10 @@ class WRBase(nn.Module):
     def __init__(self, input_size=(128, 128)):
         super().__init__()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.input_size = input_size
+        self.input_size = input_size if type(input_size) == tuple else (input_size, input_size)
+
+    def summary(self):
+        summary(self._model, (3, *self.input_size))
 
     def train_epoch(
         self, dataloader: DataLoader, epoch=0, log_every=-1, from_precomputed_set=False
