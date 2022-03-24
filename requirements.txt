@@ -10,3 +10,4 @@ timm==0.5.4
 torchvision==0.11.3
 isort==5.10.1
 torchsummary~=1.5.1
+pytorch_msssim
