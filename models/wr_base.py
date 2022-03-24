@@ -1,5 +1,5 @@
 from pathlib import Path
-import os
+import os, time
 
 import numpy as np
 from torch.optim import Optimizer
@@ -27,16 +27,25 @@ class WRBase(nn.Module):
         self.input_size = input_size
 
     def train_epoch(
-        self, dataloader: DataLoader, epoch=0, log_every=-1, from_precomputed_set=False
+        self, dataloader: DataLoader, epoch=0, log_every=200, from_precomputed_set=False
     ):
         self.train()
         epoch_loss = 0
         running_loss = 0
+        # batch_time = AverageMeter('Time', ':6.3f')
+        # data_time = AverageMeter('Data', ':6.3f')
+        # progress = ProgressMeter(
+        #     len(dataloader),
+        #     [batch_time, data_time],
+        #     prefix="\nEpoch: [{}]".format(epoch)
+        # )
+        end = time.time()
         for i, (x, y_hat) in tqdm(enumerate(iter(dataloader)), total=len(dataloader)):
             # zero the parameter gradients
+            # data_time.update(time.time() - end)
             self._optimizer.zero_grad()
 
-            x, y_hat = x.to(self.device), y_hat.to(self.device)
+            # x, y_hat = x, y_hat
 
             # forward + backward + optimize
             y = self.forward_last(x) if from_precomputed_set else self(x)
@@ -47,15 +56,18 @@ class WRBase(nn.Module):
             # add loss to return
             epoch_loss += loss.item()
 
+            # batch_time.update(time.time() - end)
+            # end = time.time()
             # print statistics
-            if log_every > 0:
-                running_loss += loss.item()
-                if (i + 1) % log_every == 0:
-                    print(
-                        f"[{epoch + 1}, {i + 1:5d}] "
-                        f"loss: {running_loss / log_every:.3f}"
-                    )
-                    running_loss = 0
+            # if log_every > 0:
+            #     if (i + 1) % log_every == 0:
+            #         progress.display(i)
+                # running_loss += loss.item()
+                #     print(
+                #         f"[{epoch + 1}, {i + 1:5d}] "
+                #         f"loss: {running_loss / log_every:.3f}"
+                #     )
+                #     running_loss = 0
 
         return epoch_loss / len(dataloader)
 
@@ -235,3 +247,42 @@ class WRBase(nn.Module):
 
     def forward_last(self, x):
         return self.forward(x)
+
+class ProgressMeter(object):
+    def __init__(self, num_batches, meters, prefix=""):
+        self.batch_fmtstr = self._get_batch_fmtstr(num_batches)
+        self.meters = meters
+        self.prefix = prefix
+
+    def display(self, batch):
+        entries = [self.prefix + self.batch_fmtstr.format(batch)]
+        entries += [str(meter) for meter in self.meters]
+        print('\t'.join(entries))
+
+    def _get_batch_fmtstr(self, num_batches):
+        num_digits = len(str(num_batches // 1))
+        fmt = '{:' + str(num_digits) + 'd}'
+        return '[' + fmt + '/' + fmt.format(num_batches) + ']'
+
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self, name, fmt=':f'):
+        self.name = name
+        self.fmt = fmt
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+    def __str__(self):
+        fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
+        return fmtstr.format(**self.__dict__)

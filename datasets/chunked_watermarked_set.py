@@ -1,4 +1,4 @@
-import gc
+import gc, time, threading
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, List, Union
@@ -56,8 +56,8 @@ class ChunkedWatermarkedSet(VisionDataset):
         # Get all watermarked images that still have existing originals
         data_set_paths = [
             jpg_in_watermarked_dataset.name
-            for jpg_in_watermarked_dataset in OUTPUT_DIR.glob("*.jpg")
-            if DATASET_DIR.joinpath(jpg_in_watermarked_dataset.name).exists
+            for jpg_in_watermarked_dataset in original_dir.glob("*.jpg")
+            if watermarked_dir.joinpath(jpg_in_watermarked_dataset.name).exists()
         ]
 
         self.training_set, self.validation_set, self.testing_set = np.split(
@@ -76,7 +76,8 @@ class ChunkedWatermarkedSet(VisionDataset):
             self.data_set_names = self.training_set
 
         self.include_fn = include_fn
-
+        self.preloaded_data = {}
+        self.preload_buffer = 20
         gc.collect()
 
     def train(self):
@@ -100,17 +101,45 @@ class ChunkedWatermarkedSet(VisionDataset):
     def __get_original_path(self, name):
         return self.original_dir.joinpath(name)
 
-    def __getitem__(self, index: int) -> Union[tuple[Any, Any, Path], tuple[Any, Any]]:
-        # Read watermarked and original images as Tensors
+    def __load_images(self, index):
         watermarked = read_image(
             self.__get_watermarked_path(self.data_set_names[index]).as_posix()
         ).to(device=self.device)
         original = read_image(
             self.__get_original_path(self.data_set_names[index]).as_posix()
         ).to(device=self.device)
+        return self.transforms(watermarked, original)
 
-        # calculate transforms
-        watermarked, original = self.transforms(watermarked, original)
+    def __preload(self, start_index, add=True):
+        if start_index in self.preloaded_data: del self.preloaded_data[start_index]
+        index = start_index+self.preload_buffer-1 if add else start_index
+        self.preloaded_data[index] = None
+        self.preloaded_data[index] = self.__load_images(index)
+
+
+    def __getitem__(self, index: int) -> Union[tuple[Any, Any, Path], tuple[Any, Any]]:
+        # Read watermarked and original images as Tensors
+        if index in self.preloaded_data: 
+            time_waited = 0
+            while (data := self.preloaded_data[index]) is None: 
+                print("\rwaiting", end="")
+                time_waited += 0.001
+                if time_waited > 3: 
+                    print(f'\nExceeded waiting times')
+                    del self.preloaded_data[index]
+                    data = self.__load_images(index)
+                    print(data)
+                    break
+                time.sleep(0.001)
+            watermarked, original = data
+            threading.Thread(target=self.__preload, args=(index,)).start()
+        else:
+            # print(f'\nFresh access needed for {index}')
+            watermarked, original = self.__load_images(index)
+            if index < 2:
+                for i in range(self.preload_buffer):
+                    if i == 0: continue
+                    self.__preload(index+i, add=False)
 
         if self.include_fn:
             return watermarked, original, self.data_set_names[index]

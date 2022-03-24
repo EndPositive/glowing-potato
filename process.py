@@ -10,7 +10,7 @@ import numpy as np
 from prompt_toolkit.shortcuts import confirm
 
 from preprocessing import DATASET_DIR, OUTPUT_DIR
-from preprocessing.data_pipeline import process_default_pool, process_custom_pool
+from preprocessing.data_pipeline import process_default_pool, process_custom_pool, process_custom_pool_old
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     start = time.perf_counter()
 
-    process_custom_pool(input_jpgs, OUTPUT_DIR, options.overwrite)
+    process_custom_pool_old(input_jpgs, OUTPUT_DIR, options.overwrite)
 
     logger.debug(
         "Processed %d images in %d seconds",

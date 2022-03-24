@@ -13,7 +13,7 @@ from PIL import Image
 import torch
 from tqdm import tqdm
 from IPython.display import display
-from preprocessing import DATASET_DIR, OUTPUT_DIR
+from preprocessing import DATASET_DIR, OUTPUT_DIR, DATASET_TEST_DIR, OUTPUT_DIR_2
 
 
 class UNetWR(WRBase):
@@ -62,17 +62,18 @@ if __name__ == "__main__":
 
     train = sys.argv[-1] == "train"
 
-    model_to_load = "ckpt/final.pth"
-    model_to_load = newest("ckpt")
+    # model_to_load = "ckpt/unet_start.pth"
+    model_to_load = newest("ckpt/unet_chaos")
 
     m.load(model_to_load)
 
     if train:
         m.train_model(
-            n_epochs=50,
-            batch_size=16,
+            n_epochs=-1,
+            batch_size=12,
             save_every=1,
-            save_path="ckpt",
+            save_path="ckpt/unet_chaos",
+            data_shuffle=False,
             data_set=ChunkedWatermarkedSet(
                 data_set_type=DataSetType.Training,
                 device=m.device,
@@ -84,8 +85,9 @@ if __name__ == "__main__":
         )
     else:
         print("Using model: " + model_to_load.split("\\")[-1])
-        x = Image.open("resources/out/0aacbdb54e853a0a.jpg")
-        # x = Image.open("resources/real/stock.jpg")
+        x = Image.open("resources/out/0a1aee5d7701ce5c.jpg")
+        # x = Image.open("resources/real/123rf.webp")
+        # x = Image.open("resources/real/123rf_3.webp")
         y = m.predict(x, max_batch_size=8)
         threading.Thread(target=x.show).start()
         threading.Thread(target=y.show).start()
