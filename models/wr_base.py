@@ -12,6 +12,7 @@ from datasets.swin_precomputed_set import SwinPrecomputedSet
 from typing import Callable
 from tqdm import tqdm
 from torchsummary import summary
+from pytorch_msssim import MS_SSIM
 
 from preprocessing import formatter as processing
 
@@ -177,17 +178,18 @@ class WRBase(nn.Module):
     def load(self, path):
         self._model.load_state_dict(torch.load(path, map_location=self.device))
 
-    def test(self, testset: DataLoader, from_precomputed_set=False):
+    def test(self, testset: DataLoader, msssim=False, from_precomputed_set=False):
         self.eval()
+        msssim_fn = MS_SSIM(data_range=1)
+        losses, msssim_losses = [], []
         with torch.no_grad():
-            return np.mean(
-                [
-                    self._lossfn(
-                        self.forward_last(x) if from_precomputed_set else self(x), y_hat
-                    ).item()
-                    for x, y_hat in tqdm(iter(testset))
-                ]
-            )
+            for x, y_hat in tqdm(iter(testset)):
+                y = self.forward_last(x) if from_precomputed_set else self(x)
+                losses.append(self._lossfn(y, y_hat).item())
+                if msssim:
+                    msssim_losses.append(msssim_fn(y, y_hat))
+
+        return np.mean(losses), np.mean(msssim_losses) if msssim else np.mean(losses)
 
     def validate_from_checkpoints(self, path, data_set=None, max_batch_size=16):
         if data_set is None:
