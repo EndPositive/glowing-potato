@@ -76,8 +76,9 @@ class ChunkedWatermarkedSet(VisionDataset):
             self.data_set_names = self.training_set
 
         self.include_fn = include_fn
+        self.error_tensors = torch.from_numpy(np.full((3,288,288), -1)).float().to(device=self.device), torch.from_numpy(np.full((3,100,100), -1)).float().to(device=self.device)
         self.preloaded_data = {}
-        self.preload_buffer = 15
+        self.preload_buffer = 30
         gc.collect()
 
     def train(self):
@@ -110,15 +111,13 @@ class ChunkedWatermarkedSet(VisionDataset):
                 self.__get_original_path(self.data_set_names[index]).as_posix()
             ).to(device=self.device)
             return self.transforms(watermarked, original)
-        except IndexError: pass
+        except (IndexError, RuntimeError): pass
 
     def __preload(self, start_index, add=True):
         if start_index in self.preloaded_data: del self.preloaded_data[start_index]
         index = start_index+self.preload_buffer-1 if add else start_index
         self.preloaded_data[index] = None
         self.preloaded_data[index] = self.__load_images(index)
-        if [x for x in self.preloaded_data if x < start_index]:
-            print([x for x in self.preloaded_data if x < start_index])
 
     def __getitem__(self, index: int) -> Union[tuple[Any, Any, Path], tuple[Any, Any]]:
         # Read watermarked and original images as Tensors
@@ -128,25 +127,21 @@ class ChunkedWatermarkedSet(VisionDataset):
                 print("\r$", end="")
                 time_waited += 0.001
                 if time_waited > 3: 
-                    print(f'\nExceeded waiting times - {list(self.preloaded_data)}')
-                    del self.preloaded_data[index]
-                    data = self.__load_images(index)
-                    print(data)
-                    break
+                    print(f'\nExceeded waiting times {index} - {list(self.preloaded_data)}')
+                    self.preloaded_data = {}
+                    return self.error_tensors
                 time.sleep(0.001)
             watermarked, original = data
             threading.Thread(target=self.__preload, args=(index,)).start()
         else:
             # print(f'\nFresh access needed for {index}')
             watermarked, original = self.__load_images(index)
-            if index < 2:
-                for i in range(self.preload_buffer):
-                    if i == 0: continue
-                    self.__preload(index+i, add=False)
-
+            for i in range(self.preload_buffer):
+                if i == 0: continue 
+                self.__preload(index+i, add=False)
+        
         if self.include_fn:
             return watermarked, original, self.data_set_names[index]
-
         return watermarked, original
 
     def __len__(self) -> int:

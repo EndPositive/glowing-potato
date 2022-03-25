@@ -44,7 +44,11 @@ class WRBase(nn.Module):
             # zero the parameter gradients
             # data_time.update(time.time() - end)
             self._optimizer.zero_grad()
-
+            if x[0][0][0][0].item() == -1: 
+                print(f'Out of memory, restarting')
+                torch.cuda.empty_cache()
+                time.sleep(5)
+                continue
             # x, y_hat = x, y_hat
 
             # forward + backward + optimize
