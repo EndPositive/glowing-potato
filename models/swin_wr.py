@@ -82,9 +82,11 @@ class SwinWR(WRBase):
 
             self._model.conv1.weight.requires_grad = True
             self._model.conv2.weight.requires_grad = True
+            self._model.conv3.weight.requires_grad = True
             self._model.conv_last.weight.requires_grad = True
             self._model.conv1.bias.requires_grad = True
             self._model.conv2.bias.requires_grad = True
+            self._model.conv3.bias.requires_grad = True
             self._model.conv_last.bias.requires_grad = True
 
     def precompute_dataset(
