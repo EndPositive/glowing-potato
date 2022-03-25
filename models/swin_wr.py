@@ -80,7 +80,11 @@ class SwinWR(WRBase):
             for param in self._model.parameters():
                 param.requires_grad = False
 
+            self._model.conv1.weight.requires_grad = True
+            self._model.conv2.weight.requires_grad = True
             self._model.conv_last.weight.requires_grad = True
+            self._model.conv1.bias.requires_grad = True
+            self._model.conv2.bias.requires_grad = True
             self._model.conv_last.bias.requires_grad = True
 
     def precompute_dataset(
@@ -140,6 +144,8 @@ class SwinWR(WRBase):
 
 if __name__ == "__main__":
     m = SwinWR()
+    m.summary()
+    exit(0)
     from PIL import Image
     m.predict(Image.open('../../../Downloads/WhatsApp Image 2022-03-16 at 8.43.40 PM.jpeg')).show()
     # m.train_model(batch_size=1)

@@ -28,10 +28,9 @@ class SwinIRMulti(SwinIR):
         img_range=1,
         upsampler="",
         resi_connection="1conv",
-        n_input_images=10,
+        n_input_images=1,
         **kwargs,
     ):
-
         super().__init__(
             img_size,
             patch_size,
@@ -59,7 +58,9 @@ class SwinIRMulti(SwinIR):
 
         num_out_ch = in_chans
         self.n_input_images = n_input_images
-        self.conv_last = nn.Conv2d(embed_dim * n_input_images, num_out_ch, 3, 1, 1)
+        self.conv1 = nn.Conv2d(embed_dim * n_input_images, embed_dim, 1, 1)
+        self.conv2 = nn.Conv2d(embed_dim, 64, 3, 1, 1)
+        self.conv_last = nn.Conv2d(64, num_out_ch, 3, 1, padding=1)
 
     def forward_feature_extraction(self, x):
         # x has shape (batch_size * n_input_images, 3, H, W)
@@ -84,6 +85,10 @@ class SwinIRMulti(SwinIR):
         ), x
 
     def forward_last(self, x, residual):
+        # 1x1 -> 3x3 conv
+        x = self.conv1(x)
+        x = self.conv2(x)
+
         # our layer
         x = residual + self.conv_last(x)
 
