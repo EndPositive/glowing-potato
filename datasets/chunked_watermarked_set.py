@@ -78,7 +78,7 @@ class ChunkedWatermarkedSet(VisionDataset):
         self.include_fn = include_fn
         self.error_tensors = torch.from_numpy(np.full((3,288,288), -1)).float().to(device=self.device), torch.from_numpy(np.full((3,100,100), -1)).float().to(device=self.device)
         self.preloaded_data = {}
-        self.preload_buffer = 30
+        self.preload_buffer = 20
         gc.collect()
 
     def train(self):
@@ -126,8 +126,8 @@ class ChunkedWatermarkedSet(VisionDataset):
             while (data := self.preloaded_data[index]) is None: 
                 print("\r$", end="")
                 time_waited += 0.001
-                if time_waited > 3: 
-                    print(f'\nExceeded waiting times {index} - {list(self.preloaded_data)}')
+                if time_waited > 1: 
+                    # print(f'\nExceeded waiting times {index} - {list(self.preloaded_data)}')
                     self.preloaded_data = {}
                     return self.error_tensors
                 time.sleep(0.001)

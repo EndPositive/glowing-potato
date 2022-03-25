@@ -1,4 +1,4 @@
-import sys, os, threading
+import sys, os, threading, random
 from pathlib import Path
 
 sys.path.append(Path(__file__).parents[1].absolute().as_posix())
@@ -85,10 +85,13 @@ if __name__ == "__main__":
         )
     else:
         print("Using model: " + model_to_load.split("\\")[-1])
-        x = Image.open("resources/out/0a0c9a2d7341096f.jpg")
-        # x = Image.open("resources/real/123rf.webp")
-        # x = Image.open("resources/real/old2.jpg")
-        # x = Image.open("resources/real/123rf_3.webp")
+        img_name = "resources/out/" + random.choice(os.listdir("resources/out/"))
+        # img_name = "resources/out/0a0c9a2d7341096f.jpg"
+        # img_name = "resources/real/123rf.webp"
+        # img_name = "resources/real/old2.jpg"
+        # img_name = "resources/real/123rf_3.webp"
+        x = Image.open(img_name)
+        
         y = m.predict(x, max_batch_size=8)
         threading.Thread(target=x.show).start()
         threading.Thread(target=y.show).start()
