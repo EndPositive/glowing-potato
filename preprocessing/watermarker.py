@@ -1,3 +1,7 @@
+import sys, os, threading
+from pathlib import Path
+
+sys.path.append(Path(__file__).parents[1].absolute().as_posix())
 import logging
 import math
 import random
@@ -25,20 +29,15 @@ FONT_RGB = FONT_RGB if FONT_RGB else tuple(np.random.choice(range(256), size=3))
 FONT_SIZE = 50
 WATERMARK_TEXT = "Getty Images"
 
+def radians(deg): return deg * math.pi / 180
+def coinflip(): return np.random.randint(2) == 0
 
 def getRandomColor(startingOpacity=60, maxOpacity=90):
+    if coinflip():
+        return tuple(np.random.choice(range(256), size=1)) * 3 + (random.choice(range(60, 90)),)
     return tuple(np.random.choice(range(256), size=3)) + (
         random.choice(range(startingOpacity, maxOpacity)),
     )
-
-
-def radians(deg):
-    return deg * math.pi / 180
-
-
-def coinflip():
-    return np.random.randint(2) % 2 == 0
-
 
 class Watermarker:
     def __init__(
@@ -264,10 +263,10 @@ class Watermarker:
         self.draw_circles(amount_circles)
 
     def add_default(self):
-        self.draw_randomized_grid()
-        self.draw_random_lines()
-        self.add_shapes()
-        self.add_random_text()
+        if coinflip(): self.draw_randomized_grid()
+        if coinflip(): self.draw_random_lines()
+        if coinflip(): self.add_shapes()
+        if coinflip(): self.add_random_text()
 
     def save(self, output_dir):
         self.image.save(f"{output_dir}/{self.filename}")

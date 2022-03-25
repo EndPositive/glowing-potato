@@ -50,6 +50,20 @@ def process_default_pool(
         pool.join()
 
 
+def add_watermark(image, output_dir):
+    try:
+        wr = Watermarker(image)
+        wr.add_default()
+        wr.save(output_dir)
+    except Exception: pass
+    
+def process_custom_pool_old(images: List[Path], output_dir: Path, overwrite=True, processes=16):
+    output_dir.mkdir(exist_ok=True)
+
+    pool = CustomPool(processes)
+    for i in tqdm(range(len(images))):
+        pool.map(add_watermark, args=((images[i], output_dir,)))
+
 def process_custom_pool(
     images: List[Path], output_dir: Path, overwrite=True, processes=16
 ):
